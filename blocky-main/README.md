@@ -1,16 +1,96 @@
-# React + Vite
+# 🔧 Blockly Hardware Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A visual programming environment for hardware control — built on Google Blockly and wired into the Scratch GUI extension system.
+> **Current Status**: Phase 1 (Blockly Hardware IDE) - Completed
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📖 Project Overview
 
-## React Compiler
+This project lets students and makers **visually program hardware** (Arduino, Raspberry Pi, micro:bit, ESP32) using drag-and-drop block coding.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The system is designed to work in two ways:
 
-## Expanding the ESLint configuration
+1.  **Standalone Blockly IDE** (Current Implementation) — A dedicated workspace with hardware-specific blocks that generate code.
+2.  **Scratch GUI Extension** (Future) — Embedding hardware blocks directly inside Scratch.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ✨ Features (Phase 1)
+
+### 🧩 Custom Hardware Blocks
+
+We have implemented a custom toolbox with specialized categories:
+
+- **🟦 Control**: Loops, conditionals, and timing functions.
+- **🟥 GPIO**: `digital_write`, `digital_read`, `analog_write`, `analog_read`, `set_pin_mode`.
+- **🟩 Sensors**: `read_ultrasonic`, `read_dht`, `read_ir`.
+- **🟨 Actuators**: `set_servo_angle`, `set_motor_speed`, `set_neopixel`.
+
+### ⚡ Arduino Code Generation
+
+The environment generates valid **C++ Arduino code** corresponding to the visual blocks. It handles:
+
+- Automatic library inclusions (`<Servo.h>`, `<DHT.h>`, etc.).
+- `setup()` and `loop()` structure.
+- Global variable declarations and pin modes.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm
+
+### Installation
+
+1.  Clone the repository:
+
+    ```bash
+    git clone <repository-url>
+    cd blocky-main
+    ```
+
+2.  Install dependencies:
+
+    ```bash
+    npm install
+    ```
+
+3.  Run the development server:
+
+    ```bash
+    npm run dev
+    ```
+
+4.  Open your browser at `http://localhost:5173` (or the port shown in your terminal).
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Browser (UI Layer)                  │
+│                                                         │
+│   ┌─────────────────┐       ┌─────────────────────┐     │
+│   │  Blockly IDE    │       │   Scratch GUI       │     │
+│   │  (Standalone)   │       │   + HW Extension    │     │
+│   └────────┬────────┘       └──────────┬──────────┘     │
+│            │ WebSocket / HTTP          │                │
+│            ▼                           ▼                │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React, Vite
+- **Core**: Google Blockly
+- **Language**: JavaScript
+
+## 🔮 Future Roadmap
+
+- **Phase 2**: Hardware Bridge Server (Node.js/Serial communication)
+- **Phase 3**: Scratch GUI Extension
+- **Phase 4**: Integration & Real-time "Live Mode"
+- **Phase 5**: Polish, Installers & Documentation
+
+---
+
+_Generated for the EduPrime Blockly Hardware Project._
