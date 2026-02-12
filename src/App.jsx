@@ -1,7 +1,8 @@
 import * as Blockly from "blockly";
-import toolbox from '../generators/toolbox'
+import toolbox from './toolBox'
 import './blocks'
-import arduinoGen from '../generators/arduino'
+import { arduinoGen } from '../generators/arduino'
+import '../generators'
 import { useState, useEffect, useRef } from "react";
 
 const App = () => {
@@ -37,7 +38,7 @@ const App = () => {
 
   return (
     <div>
-      <div id="blockly-div" style={{ height: '480px', width: '100%' }} />
+      <div id="blockly-div" style={{ height: '90vh', width: '100vw' }} />
       <button onClick={handleGenerateCode}>Generate Code</button>
       {showCodePanel && (
         <div>

@@ -12,6 +12,7 @@ blockly.common.defineBlocksWithJsonArray([
             "max": 255
         }, {
             "type": "field_number",
+            "name": "VALUE",
             "value": 128,
             "min": 0,
             "max": 255
@@ -25,21 +26,21 @@ blockly.common.defineBlocksWithJsonArray([
     {
         "type": "analog_read",
         "message0": "analog read pin %1",
-        "args0":[{
-            "type":"field_dropdown",
-            "name":"PIN",
-            "options":[
-                ["A0"],
-                ["A1"],
-                ["A2"],
-                ["A3"],
-                ["A4"],
-                ["A5"]
-            ] 
+        "args0": [{
+            "type": "field_dropdown",
+            "name": "PIN",
+            "options": [
+                ["A0", "A0"],
+                ["A1", "A1"],
+                ["A2", "A2"],
+                ["A3", "A3"],
+                ["A4", "A4"],
+                ["A5", "A5"]
+            ]
         }],
-        "output":"Number",
-        "colour":"#E64C3C",
-        "tooltip":"Read the analog value of a pin"
+        "output": "Number",
+        "colour": "#E64C3C",
+        "tooltip": "Read the analog value of a pin"
     }
 ])
 

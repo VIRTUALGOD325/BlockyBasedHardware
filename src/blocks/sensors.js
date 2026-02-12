@@ -2,17 +2,17 @@ import * as blockly from "blockly";
 
 blockly.common.defineBlocksWithJsonArray([
     {
-        "type":"read_ultrasonic",
-        "message":"ultrasonic distance trig %1 echo %2",
-        "args0":[{
-            "type":"field_number",
-            "name":"TRIG",
-            "default":9
+        "type": "read_ultrasonic",
+        "message0": "ultrasonic distance trig %1 echo %2",
+        "args0": [{
+            "type": "field_number",
+            "name": "TRIG",
+            "default": 9
         },
         {
-            "type":"field_number",
-            "name":"ECHO",
-            "default":10
+            "type": "field_number",
+            "name": "ECHO",
+            "default": 10
         }],
         "output": "Number",
         "colour": "#27AE60",

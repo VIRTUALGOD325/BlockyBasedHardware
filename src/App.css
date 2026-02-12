@@ -5,28 +5,28 @@ body,
   margin: 0;
   overflow: hidden;
 }
-#blockly-div{
+#blockly-div {
   position: absolute;
-  top: 48px;
+  top: 60px;
   bottom: 0;
   left: 0;
   right: 0;
 }
-.toolbar{
-  height: 48px;
+.toolbar {
+  height: 60px;
   display: flex;
   align-items: center;
-  background: darkslategray; 
+  background: darkslategray;
   /* background colour main */
 }
-.code-panel{
+.code-panel {
   position: fixed;
   right: 0;
-  width: 40%;
-  top: 48px;
+  width: 90%;
+  top: 60px;
   bottom: 0;
   background: darksalmon;
   overflow: auto;
-  font-family:monospace;
+  font-family: monospace;
   visibility: hidden;
 }
