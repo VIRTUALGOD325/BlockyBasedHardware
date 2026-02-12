@@ -1,8 +1,7 @@
 import * as Blockly from "blockly";
 import toolbox from '../generators/toolbox'
 import './blocks'
-import './generators'
-import arduinoGen from '../blocks/generators/arduino'
+import arduinoGen from '../generators/arduino'
 import { useState, useEffect, useRef } from "react";
 
 const App = () => {
