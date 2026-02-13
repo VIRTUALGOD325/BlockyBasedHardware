@@ -20,7 +20,7 @@ blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#E64C3C",
+        "colour": "#FF6680",
         "tooltip": "Write a value to an analog pin"
     },
     {
@@ -39,7 +39,7 @@ blockly.common.defineBlocksWithJsonArray([
             ]
         }],
         "output": "Number",
-        "colour": "#E64C3C",
+        "colour": "#FF6680",
         "tooltip": "Read the analog value of a pin"
     }
 ])

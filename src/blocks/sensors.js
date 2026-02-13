@@ -15,7 +15,7 @@ blockly.common.defineBlocksWithJsonArray([
             "default": 10
         }],
         "output": "Number",
-        "colour": "#27AE60",
+        "colour": "#4CBFE6",
         "tooltip": "Reads distance from ultrasonic sensor"
     },
     {
@@ -45,7 +45,7 @@ blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#27AE60",
+        "colour": "#4CBFE6",
         "tooltip": "Reads temperature or humidity from DHT sensor"
     },
     {
@@ -59,7 +59,7 @@ blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#27AE60",
+        "colour": "#4CBFE6",
         "tooltip": "Reads value from IR receiver"
     }
 ])

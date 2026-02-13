@@ -24,7 +24,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#E64C3C",
+        "colour": "#FF6680",
         "tooltip": "Configure a pin as either an INPUT or OUTPUT"
     },
     {
@@ -49,7 +49,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#E64C3C",
+        "colour": "#FF6680",
         "tooltip": "Set a digital pin HIGH or LOW"
     },
     {
@@ -65,7 +65,7 @@ Blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#E64C3C",
+        "colour": "#FF6680",
         "tooltip": "Read the digital value of a pin (HIGH or LOW)"
     }
 ]);

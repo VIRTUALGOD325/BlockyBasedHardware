@@ -1,13 +1,11 @@
-import { Toolbox } from "blockly";
-
 export default {
     kind: "categoryToolbox",
     contents: [
-        // ─── Control (blue) ───
+        // ─── Control Flow ───
         {
             kind: "category",
-            name: "🟦 Control",
-            colour: "#3498DB",
+            name: "⚙️ Control",
+            colour: "#4C97FF", // Scratch blue
             contents: [
                 { kind: "block", type: "controls_repeat_ext" },
                 { kind: "block", type: "controls_whileUntil" },
@@ -17,11 +15,14 @@ export default {
             ]
         },
 
-        // ─── GPIO (red) ───
+        // ─── Separator ───
+        { kind: "sep" },
+
+        // ─── GPIO Pins ───
         {
             kind: "category",
-            name: "🟥 GPIO",
-            colour: "#E64C3C",
+            name: "🔌 GPIO Pins",
+            colour: "#FF6680", // Scratch red/pink
             contents: [
                 { kind: "block", type: "set_pin_mode" },
                 { kind: "block", type: "digital_write" },
@@ -31,11 +32,11 @@ export default {
             ]
         },
 
-        // ─── Sensors (green) ───
+        // ─── Sensors ───
         {
             kind: "category",
-            name: "🟩 Sensors",
-            colour: "#27AE60",
+            name: "📡 Sensors",
+            colour: "#4CBFE6", // Scratch cyan/light blue
             contents: [
                 { kind: "block", type: "read_ultrasonic" },
                 { kind: "block", type: "read_dht" },
@@ -43,11 +44,11 @@ export default {
             ]
         },
 
-        // ─── Actuators (yellow) ───
+        // ─── Actuators ───
         {
             kind: "category",
-            name: "🟨 Actuators",
-            colour: "#F39C12",
+            name: "🎛️ Actuators",
+            colour: "#FFAB19", // Scratch orange
             contents: [
                 { kind: "block", type: "set_servo_angle" },
                 { kind: "block", type: "set_motor_speed" },
@@ -55,25 +56,33 @@ export default {
             ]
         },
 
-        // ─── Variables & Functions (purple) ───
+        // ─── Separator ───
+        { kind: "sep" },
+
+        // ─── Variables ───
         {
             kind: "category",
-            name: "🟪 Variables",
-            colour: "#8E44AD",
+            name: "📦 Variables",
+            colour: "#8B5CF6", // Purple - creative and vibrant
             custom: "VARIABLE"
         },
+
+        // ─── Functions ───
         {
             kind: "category",
-            name: "🟪 Functions",
-            colour: "#8E44AD",
+            name: "⚡ Functions",
+            colour: "#8B5CF6", // Purple - matches variables for consistency
             custom: "PROCEDURE"
         },
 
-        // ─── Math & Logic (built-in) ───
+        // ─── Separator ───
+        { kind: "sep" },
+
+        // ─── Math ───
         {
             kind: "category",
-            name: "Math",
-            colour: "#5B6EA6",
+            name: "🔢 Math",
+            colour: "#59C059", // Scratch green
             contents: [
                 { kind: "block", type: "math_number" },
                 { kind: "block", type: "math_arithmetic" },
@@ -82,10 +91,12 @@ export default {
                 { kind: "block", type: "math_modulo" },
             ]
         },
+
+        // ─── Logic ───
         {
             kind: "category",
-            name: "Logic",
-            colour: "#5B80A5",
+            name: "🧠 Logic",
+            colour: "#59C059", // Scratch green
             contents: [
                 { kind: "block", type: "logic_compare" },
                 { kind: "block", type: "logic_operation" },
