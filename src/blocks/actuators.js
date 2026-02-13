@@ -17,7 +17,7 @@ blockly.common.defineBlocksWithJsonArray([
         }],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#F39C12"
+        "colour": "#FFAB19"
     },
     {
         "type": "set_motor_speed",
@@ -48,7 +48,7 @@ blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#F39C12"
+        "colour": "#FFAB19"
 
     },
     {
@@ -88,7 +88,7 @@ blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#F39C12"
+        "colour": "#FFAB19"
     }
 ]);
 

@@ -6,27 +6,29 @@ blockly.common.defineBlocksWithJsonArray([
         "message0": "wait %1 millisecond",
         "args0":[{
             "type":"field_number",
-            "default": 1000,
+            "name": "TIME",
+            "value": 1000,
             "min":0,
             "max": 60000
         }],
         "previousStatement":null,
         "nextStatement":null,
-        "colour":"#3498DB",
+        "colour":"#4C97FF",
         "tooltip":"Delay the program for a specified number of milliseconds"
     },
     {
-        "type":"delay_s",
+        "type":"delay_us",
         "message0": "wait %1 microsecond",
         "args0":[{
             "type":"field_number",
-            "default": 100,
+            "name": "TIME",
+            "value": 100,
             "min":0,
-            "max": 60
+            "max": 1000000
         }],
         "previousStatement":null,
         "nextStatement":null,
-        "colour":"#3498DB",
+        "colour":"#4C97FF",
         "tooltip":"Delay the program for a specified number of microseconds"
     }  
 ])

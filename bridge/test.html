@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bridge Server Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 Bridge Server Test Page</h1>
+
+    <div id="status"></div>
+
+    <h2>API Endpoints</h2>
+    <button onclick="testHealth()">Test /api/health</button>
+    <button onclick="testStatus()">Test /api/status</button>
+    <button onclick="testDevices()">Test /api/devices</button>
+
+    <h2>WebSocket</h2>
+    <button onclick="connectWS()">Connect WebSocket</button>
+    <button onclick="disconnectWS()">Disconnect</button>
+
+    <h2>Response</h2>
+    <pre id="response"></pre>
+
+    <script>
+      let ws = null;
+      const statusDiv = document.getElementById("status");
+      const responseDiv = document.getElementById("response");
+
+      function showStatus(message, isError = false) {
+        statusDiv.innerHTML = `<div class="status ${isError ? "error" : "success"}">${message}</div>`;
+      }
+
+      function showResponse(data) {
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function testHealth() {
+        try {
+          const res = await fetch("http://localhost:8765/api/health");
+          const data = await res.json();
+          showStatus("✅ Health check successful");
+          showResponse(data);
+        } catch (error) {
+          showStatus("❌ Health check failed: " + error.message, true);
+          showResponse({ error: error.message });
+        }
+      }
+
+      async function testStatus() {
+        try {
+          const res = await fetch("http://localhost:8765/api/status");
+          const data = await res.json();
+          showStatus("✅ Status retrieved");
+          showResponse(data);
+        } catch (error) {
+          showStatus("❌ Status failed: " + error.message, true);
+          showResponse({ error: error.message });
+        }
+      }
+
+      async function testDevices() {
+        try {
+          const res = await fetch("http://localhost:8765/api/devices");
+          const data = await res.json();
+          showStatus("✅ Devices listed");
+          showResponse(data);
+        } catch (error) {
+          showStatus("❌ Devices failed: " + error.message, true);
+          showResponse({ error: error.message });
+        }
+      }
+
+      function connectWS() {
+        if (ws) {
+          showStatus("⚠️ Already connected", true);
+          return;
+        }
+
+        ws = new WebSocket("ws://localhost:8765");
+
+        ws.onopen = () => {
+          showStatus("✅ WebSocket connected");
+          showResponse({ status: "Connected" });
+        };
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          showStatus("📨 Message received");
+          showResponse(data);
+        };
+
+        ws.onerror = (error) => {
+          showStatus("❌ WebSocket error", true);
+          showResponse({ error: "Connection failed" });
+        };
+
+        ws.onclose = () => {
+          showStatus("🔌 WebSocket disconnected");
+          ws = null;
+        };
+      }
+
+      function disconnectWS() {
+        if (ws) {
+          ws.close();
+          ws = null;
+          showStatus("🔌 Disconnected");
+        }
+      }
+
+      // Auto-test on load
+      window.onload = () => {
+        testHealth();
+      };
+    </script>
+  </body>
+</html>
