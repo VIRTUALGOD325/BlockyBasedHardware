@@ -21,29 +21,7 @@ app.use(express.json());
 // API Routes
 app.use("/api", apiRouter);
 
-class WebSocketServer {
-  constructor() {
-    this.clients = new Set();
-    this.server = new WebSocketServer({ port });
-  }
-
-  onConnection(ws){
-    this.clients.add(ws);
-    ws.on('message', (raw)=>{
-      const msg = JSON.parse(raw);
-      this.handleCommand(msg,ws);
-    })
-    ws.on('close',()=>{
-      this.clients.delete(ws)
-    })
-  }
-
-  broadcast(message){
-    this.clients.forEach( client => {
-      client.send(JSON.stringify(message))
-    })
-  }
-}
+// WebSocket Connection Handling
 
 // WebSocket Connection Handling
 wss.on("connection", (ws) => {
