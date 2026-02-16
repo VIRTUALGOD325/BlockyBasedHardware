@@ -7,8 +7,10 @@ export enum ConnectionStatus {
 }
 
 export interface DevicePort {
-  id: string;
-  name: string;
+  id: string; // Keep for compatibility if used elsewhere, but path is the main identifier now
+  path: string;
+  manufacturer?: string;
+  name: string; // Optional display name
   type: "USB" | "BLUETOOTH";
 }
 

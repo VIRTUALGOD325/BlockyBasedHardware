@@ -58,4 +58,28 @@ router.get('/status', (req, res) => {
     });
 });
 
+// Connect to a specific device
+router.post('/connect', async (req, res) => {
+    const { port, mode } = req.body;
+    if (!port) {
+        return res.status(400).json({ success: false, error: "Port is required" });
+    }
+    try {
+        await boardManager.connect(port, mode);
+        res.json({ success: true, message: `Connecting to ${port}...` });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Disconnect from current device
+router.post('/disconnect', async (req, res) => {
+    try {
+        await boardManager.disconnect();
+        res.json({ success: true, message: "Disconnected" });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;

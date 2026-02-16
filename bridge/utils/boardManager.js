@@ -12,20 +12,27 @@ class BoardManager {
         this.wsClients = new Set();
     }
 
-    // Initialize board connection
-    async initialize() {
+    // Initialize board connection (Auto-connect if portName is null)
+    async initialize(portName = null) {
         try {
-            this.boardInstance = new Board({
+            const options = {
                 repl: false,
                 debug: false
-            });
+            };
+            // If port is specified, use it. Otherwise, Johnny-Five auto-detects.
+            if (portName) {
+                options.port = portName;
+            }
+
+            this.boardInstance = new Board(options);
 
             this.boardInstance.on('ready', () => {
-                console.log('Board connected and ready');
+                console.log(`Board connected and ready on ${portName || 'auto-detected port'}`);
                 this.connectedBoard = {
                     type: 'Arduino Uno', // TODO: Detect dynamically
                     pins: this.boardInstance.pins.length,
-                    connectedAt: Date.now()
+                    connectedAt: Date.now(),
+                    port: portName // Store port info
                 };
 
                 this.broadcastToAll({
@@ -47,6 +54,55 @@ class BoardManager {
             console.error('Failed to initialize board:', error);
             throw error;
         }
+    }
+
+    // Manual connect wrapper
+    async connect(portName) {
+        // TODO: Handle 'mode' (Wire vs Bluetooth vs BLE) 
+        // For now, Wire and Bluetooth Classic are treated the same via SerialPort path.
+        if (this.isReady()) {
+            await this.disconnect();
+        }
+        await this.initialize(portName);
+    }
+
+    // Disconnect board
+    async disconnect() {
+        console.log("Disconnecting board...");
+        this.stopAllStreams();
+
+        if (this.boardInstance) {
+            try {
+                // If board has an io instance (Firmata), try to close it
+                if (this.boardInstance.io && typeof this.boardInstance.io.close === 'function') {
+                    // Check if it returns a promise
+                    const res = this.boardInstance.io.close();
+                    if (res && typeof res.then === 'function') await res;
+                }
+                // Fallback: try closing the port directly if accessible and not already closed by io.close()
+                else if (this.boardInstance.port && typeof this.boardInstance.port.close === 'function') {
+                    await new Promise((resolve) => {
+                        this.boardInstance.port.close((err) => {
+                            if (err) console.error("Error closing port:", err);
+                            resolve();
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error("Error during disconnect:", e);
+            }
+        }
+        this.boardInstance = null;
+        this.connectedBoard = null;
+        console.log("Board disconnected.");
+    }
+
+    // Reconnect board
+    async reconnect(portName) {
+        console.log(`Reconnecting to ${portName}...`);
+        // Wait a bit to ensure port is released by OS
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.initialize(portName);
     }
 
     // Check if board is ready

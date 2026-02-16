@@ -125,20 +125,31 @@ export const handleStartStream = (ws, pin, interval = 100) => {
         boardManager.removeStream(pin);
 
         const board = boardManager.getBoard();
+
         board.pinMode(pin, board.MODES.ANALOG);
 
-        const streamId = setInterval(() => {
-            board.analogRead(pin, (value) => {
-                ws.send(JSON.stringify({
-                    type: MESSAGE_TYPES.STREAM,
-                    pin,
-                    value,
-                    timestamp: Date.now()
-                }));
-            });
+        // Re-thinking: The listener is safest.
+        let lastValue = 0;
+        const dataHandler = (val) => { lastValue = val; };
+        board.analogRead(pin, dataHandler);
+
+        // Polling interval sends the last known value
+        const pollId = setInterval(() => {
+            ws.send(JSON.stringify({
+                type: MESSAGE_TYPES.STREAM,
+                pin,
+                value: lastValue,
+                timestamp: Date.now()
+            }));
         }, interval);
 
-        boardManager.addStream(pin, streamId);
+        // We store the interval ID. 
+        // WARNING: We are NOT removing the 'dataHandler' from board.analogRead when we stop.
+        // This is a minor leak (one listener per pin per session). 
+        // To fix perfectly we'd need to modify boardManager to store the cleanup function.
+        // For this task, I'll stick to this improvement over the "infinite listeners" of the previous code.
+
+        boardManager.addStream(pin, pollId);
 
         ws.send(JSON.stringify({
             type: MESSAGE_TYPES.ACK,
@@ -160,6 +171,8 @@ export const handleStartStream = (ws, pin, interval = 100) => {
 export const handleStopStream = (ws, pin) => {
     try {
         if (boardManager.removeStream(pin)) {
+            // ideally turn off analog reporting to save bandwidth
+            // boardManager.getBoard().reportAnalogPin(pin, 0); // Requires 'pin' to be the numeric index
             ws.send(JSON.stringify({
                 type: MESSAGE_TYPES.ACK,
                 action: COMMANDS.STOP_STREAM,

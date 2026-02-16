@@ -10,6 +10,8 @@ export const useHardware = () => {
   const [connectedDevice, setConnectedDevice] = useState<DevicePort | null>(
     null,
   );
+  const [sensorValues, setSensorValues] = useState<Record<string, number>>({});
+
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -45,8 +47,6 @@ export const useHardware = () => {
 
     const onConnected = () => {
       setConnectionStatus(ConnectionStatus.CONNECTED);
-      // Device info would ideally come from the event details or handshake
-      // For now, we rely on the port passed to connect()
       addLog("Hardware bridge connected", "success");
       addLog("Ready to upload code.", "info");
     };
@@ -55,6 +55,7 @@ export const useHardware = () => {
       setConnectionStatus(ConnectionStatus.DISCONNECTED);
       setConnectedDevice(null);
       setIsRunning(false);
+      setSensorValues({}); // Reset sensors
       addLog("Hardware bridge disconnected", "error");
     };
 
@@ -66,12 +67,19 @@ export const useHardware = () => {
       );
     };
 
+    const onSensorData = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { pin, value } = customEvent.detail;
+      setSensorValues((prev) => ({ ...prev, [pin]: value }));
+    };
+
     connection.addEventListener("CONNECTED", onConnected as EventListener);
     connection.addEventListener(
       "DISCONNECTED",
       onDisconnected as EventListener,
     );
     connection.addEventListener("ERROR", onError as EventListener);
+    connection.addEventListener("sensorData", onSensorData as EventListener);
 
     return () => {
       connection.removeEventListener("CONNECTED", onConnected as EventListener);
@@ -80,8 +88,38 @@ export const useHardware = () => {
         onDisconnected as EventListener,
       );
       connection.removeEventListener("ERROR", onError as EventListener);
+      connection.removeEventListener(
+        "sensorData",
+        onSensorData as EventListener,
+      );
     };
   }, [addLog]);
+
+  const monitorPin = useCallback(
+    async (pin: string | number) => {
+      if (!hwConnection.current) return;
+      try {
+        await hwConnection.current.startStream(pin, 100); // Default 100ms
+        addLog(`Started monitoring pin ${pin}`, "info");
+      } catch (e: any) {
+        addLog(`Failed to monitor pin ${pin}: ${e.message}`, "error");
+      }
+    },
+    [addLog],
+  );
+
+  const stopMonitor = useCallback(
+    async (pin: string | number) => {
+      if (!hwConnection.current) return;
+      try {
+        await hwConnection.current.stopStream(pin);
+        addLog(`Stopped monitoring pin ${pin}`, "info");
+      } catch (e: any) {
+        addLog(`Failed to stop monitoring pin ${pin}: ${e.message}`, "error");
+      }
+    },
+    [addLog],
+  );
 
   // Actions
   const connect = useCallback(
@@ -182,16 +220,67 @@ export const useHardware = () => {
     [connectedDevice, addLog],
   );
 
+  const scanDevices = useCallback(async () => {
+    try {
+      // Add a small buffer so the UI "Scanning..." state is visible
+      const [response] = await Promise.all([
+        fetch("http://localhost:8765/api/devices"),
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+      ]);
+
+      const data = await response.json();
+      if (data.success) {
+        return data.devices;
+      }
+      return [];
+    } catch (e) {
+      addLog(`Scan failed: ${e}`, "error");
+      return [];
+    }
+  }, [addLog]);
+
+  const connectToDevice = useCallback(
+    async (port: string, mode: "WIRE" | "BT" | "BLE") => {
+      setConnectionStatus(ConnectionStatus.CONNECTING);
+      addLog(`Connecting to ${port} via ${mode}...`, "info");
+
+      try {
+        const response = await fetch("http://localhost:8765/api/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ port, mode }),
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          // The socket connection will confirm the 'CONNECTED' status
+          // We just wait for the event
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (e: any) {
+        addLog(`Connection failed: ${e.message}`, "error");
+        setConnectionStatus(ConnectionStatus.ERROR);
+      }
+    },
+    [addLog],
+  );
+
   return {
     connectionStatus,
     connectedDevice,
     logs,
     isRunning,
+    sensorValues, // Export sensor values
     connect,
     disconnect,
     runCode,
     stopCode,
     uploadCode,
-    addLog, // Expose incase app needs to log UI events
+    monitorPin, // Export monitor function
+    stopMonitor, // Export stop monitor function
+    addLog,
+    scanDevices, // New
+    connectToDevice, // New
   };
 };

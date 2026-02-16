@@ -116,9 +116,10 @@ export class HardwareConnection extends EventTarget {
   }
 
   async sendCommand(
-    action: string,
+    cmd: string,
     pin: number | string,
     value: number | null = null,
+    extra: any = {},
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.connected || !this.ws) {
@@ -129,11 +130,12 @@ export class HardwareConnection extends EventTarget {
       const requestID = this.generateId();
 
       const command: HardwareMessage = {
-        type: "cmd",
-        action,
+        type: "cmd", // This might be redundant if backend only looks at top-level props, but keeping for structure
+        cmd,
         pin,
         value: value ?? undefined, // Only send if not null
         requestID,
+        ...extra,
       };
 
       // Timeout Duration
@@ -152,13 +154,16 @@ export class HardwareConnection extends EventTarget {
     return this.sendCommand("digitalWrite", pin, value ? 1 : 0);
   }
 
-  async readAnalogPin(pin: number | string) {
-    const response = await this.sendCommand("analogRead", pin);
-    return response.value;
+  async setServo(pin: number | string, angle: number) {
+    return this.sendCommand("servoWrite", pin, null, { angle });
   }
 
-  async setServo(pin: number | string, angle: number) {
-    return this.sendCommand("servoWrite", pin, angle);
+  async startStream(pin: number | string, interval: number = 100) {
+    return this.sendCommand("startStream", pin, null, { interval });
+  }
+
+  async stopStream(pin: number | string) {
+    return this.sendCommand("stopStream", pin);
   }
 
   generateId() {

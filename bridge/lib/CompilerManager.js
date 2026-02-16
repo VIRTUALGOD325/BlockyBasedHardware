@@ -2,7 +2,7 @@ import { exec } from "child_process"; // Shell Commands
 import fs from "fs/promises";  // Write Files
 import path from "path" // File Paths Dynamic
 import os from "os"; // System Cache
-import { boardManager } from "../utils/boardManager" // Serial Port
+import { boardManager } from "../utils/boardManager.js" // Serial Port
 
 
 
@@ -10,7 +10,7 @@ class CompilerManager {
     constructor() {
         this.cliPath = "arduino-cli";
         if (!this.cliPath) {
-            print("Arduino cli missing please install");
+            console.error("Arduino cli missing please install");
         }
     }
 
