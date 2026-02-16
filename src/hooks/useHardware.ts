@@ -155,6 +155,33 @@ export const useHardware = () => {
     // Implement actual stop command if supported by firmware
   }, [addLog]);
 
+  const uploadCode = useCallback(
+    async (code: string) => {
+      if (!connectedDevice) {
+        addLog("No device connected", "error");
+        return;
+      }
+
+      setConnectionStatus(ConnectionStatus.UPLOADING);
+      try {
+        // Call our new API
+        const response = await fetch("http://localhost:8765/api/upload", {
+          method: "POST",
+          body: JSON.stringify({ code, port: connectedDevice.id }),
+        });
+
+        if (!response.ok) throw new Error("Upload Failed");
+
+        addLog("Upload Successful!", "success");
+        setConnectionStatus(ConnectionStatus.CONNECTED);
+      } catch (e: any) {
+        addLog(`Error: ${e.message}`, "error");
+        setConnectionStatus(ConnectionStatus.ERROR);
+      }
+    },
+    [connectedDevice, addLog],
+  );
+
   return {
     connectionStatus,
     connectedDevice,
@@ -164,6 +191,7 @@ export const useHardware = () => {
     disconnect,
     runCode,
     stopCode,
+    uploadCode,
     addLog, // Expose incase app needs to log UI events
   };
 };

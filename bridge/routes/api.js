@@ -2,7 +2,12 @@ import express from 'express';
 import { SerialPort } from 'serialport';
 import { boardManager } from '../utils/boardManager.js';
 
+import { handleUpload } from '../handlers/uploadHandler.js';
+
 const router = express.Router();
+
+// Upload Route
+router.post('/upload', handleUpload);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

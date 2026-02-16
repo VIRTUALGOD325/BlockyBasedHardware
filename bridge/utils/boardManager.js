@@ -1,5 +1,6 @@
 import five from 'johnny-five';
 import { MESSAGE_TYPES, ERROR_CODES } from '../config/constants.js';
+import { SerialPort } from 'serialport';
 
 const { Board } = five;
 
@@ -115,6 +116,24 @@ class BoardManager {
             this.boardInstance.close();
         }
     }
+
+    async connectRaw(portPath) {
+        this.port = new SerialPort({
+            path: portPath,
+            baudRate: 9600
+        });
+        this.port.on('data', (data) => {
+            this.broadcastToAll({
+                type: "serial:data",
+                payload: data.toString()
+            })
+        })
+    }
+
+    writeToSerial(data) {
+        if (this.port) this.port.write(data);
+    }
+
 }
 
 // Singleton instance
