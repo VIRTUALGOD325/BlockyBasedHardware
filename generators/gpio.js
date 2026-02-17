@@ -16,10 +16,15 @@ arduinoGen.forBlock['digital_write'] = function (block) {
 }
 
 // Digital Read
-arduinoGen.forBlock['digital_read'] = function (block){
+arduinoGen.forBlock['digital_read'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    return ['digitalRead('+pin+')', Order.ATOMIC]
+    return ['digitalRead(' + pin + ')', Order.ATOMIC]
 }
 
-
-
+// LED Control (ON/OFF)
+arduinoGen.forBlock['led_control'] = function (block) {
+    const pin = block.getFieldValue('PIN');
+    const state = block.getFieldValue('STATE');
+    arduinoGen.setupCode_['pin_mode_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
+    return 'digitalWrite(' + pin + ', ' + state + ');\n';
+}

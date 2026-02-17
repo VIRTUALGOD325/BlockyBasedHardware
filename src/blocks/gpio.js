@@ -67,6 +67,31 @@ Blockly.common.defineBlocksWithJsonArray([
         "output": "Number",
         "colour": "#FF6680",
         "tooltip": "Read the digital value of a pin (HIGH or LOW)"
+    },
+    {
+        "type": "led_control",
+        "message0": "set LED on pin %1 %2",
+        "args0": [
+            {
+                "type": "field_number",
+                "name": "PIN",
+                "value": 13,
+                "min": 0,
+                "max": 53
+            },
+            {
+                "type": "field_dropdown",
+                "name": "STATE",
+                "options": [
+                    ["ON", "HIGH"],
+                    ["OFF", "LOW"]
+                ]
+            }
+        ],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#FF6680",
+        "tooltip": "Turn an LED on or off on the specified pin"
     }
 ]);
 

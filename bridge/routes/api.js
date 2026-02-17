@@ -25,7 +25,9 @@ router.get('/devices', async (req, res) => {
             return (
                 port.manufacturer?.includes('Arduino') ||
                 port.manufacturer?.includes('FTDI') ||
-                port.manufacturer?.includes('Silicon Labs')
+                port.manufacturer?.includes('Silicon Labs') ||
+                port.path.toLowerCase().includes('usbserial') ||
+                port.path.toLowerCase().includes('usbmodem')
             );
         });
 

@@ -11,6 +11,9 @@ trap cleanup SIGINT SIGTERM EXIT
 echo "Starting Bridge Server..."
 (cd bridge && npm start) &
 
+echo "Starting Eduprime-Link..."
+(cd eduprime-link && npm start) &
+
 echo "Starting Frontend..."
 npm run dev
 

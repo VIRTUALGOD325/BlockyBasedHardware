@@ -1,36 +1,39 @@
-export interface HardwareMessage {
+export interface LinkMessage {
   type: string;
-  requestID?: string;
-  requestId?: string; // Handle both casings just in case
-  action?: string;
-  pin?: number | string;
-  value?: number;
+  requestId?: string;
+  data?: any;
+  port?: string;
+  code?: string;
+  status?: string;
   message?: string;
-  ok?: boolean;
-  angle?: number;
 }
 
-export interface SensorData {
-  pin: number | string;
-  value: number;
+export interface SerialPortInfo {
+  path: string;
+  manufacturer?: string;
+  vendorId?: string;
+  productId?: string;
 }
 
+type PendingRequest = {
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+  timeOut: NodeJS.Timeout;
+};
+
+/**
+ * HardwareConnection — WebSocket client for the Eduprime-Link (Electron app).
+ * Handles: port listing, connect/disconnect, compile/upload, serial data.
+ */
 export class HardwareConnection extends EventTarget {
   private url: string;
   private ws: WebSocket | null;
   public connected: boolean;
-  private pendingReq: Map<
-    string,
-    {
-      resolve: (value: any) => void;
-      reject: (reason?: any) => void;
-      timeOut: NodeJS.Timeout;
-    }
-  >;
+  private pendingReq: Map<string, PendingRequest>;
   private reconnectInterval: number;
   private reconnectTimer: NodeJS.Timeout | null;
 
-  constructor(url = "ws://localhost:8765") {
+  constructor(url = "ws://localhost:8989") {
     super();
     this.url = url;
     this.ws = null;
@@ -41,7 +44,6 @@ export class HardwareConnection extends EventTarget {
   }
 
   connect() {
-    // Prevent multiple connections
     if (
       this.ws &&
       (this.ws.readyState === WebSocket.CONNECTING ||
@@ -63,7 +65,7 @@ export class HardwareConnection extends EventTarget {
 
     this.ws.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data);
+        const msg: LinkMessage = JSON.parse(event.data);
         this.handleMessage(msg);
       } catch (e) {
         console.error("Failed to parse message:", e);
@@ -75,7 +77,7 @@ export class HardwareConnection extends EventTarget {
       this.dispatchEvent(new CustomEvent("DISCONNECTED"));
       this.ws = null;
 
-      // Auto Reconnect
+      // Auto-reconnect
       if (!this.reconnectTimer) {
         this.reconnectTimer = setTimeout(() => {
           this.reconnectTimer = null;
@@ -85,89 +87,121 @@ export class HardwareConnection extends EventTarget {
     };
 
     this.ws.onerror = (error) => {
-      // WebSocket error event doesn't contain data to parse
       this.dispatchEvent(new CustomEvent("ERROR", { detail: error }));
     };
   }
 
-  handleMessage(msg: HardwareMessage) {
-    if (msg.type === "ack" || msg.type === "error" || msg.type === "ERROR") {
-      const reqId = msg.requestID || msg.requestId;
-      if (!reqId) return;
+  private handleMessage(msg: LinkMessage) {
+    const { type, requestId } = msg;
 
-      const pending = this.pendingReq.get(reqId);
-      if (pending) {
-        clearTimeout(pending.timeOut);
-        this.pendingReq.delete(reqId);
+    switch (type) {
+      case "READY":
+        this.dispatchEvent(new CustomEvent("READY"));
+        break;
 
-        if (msg.type === "ack") {
-          pending.resolve(msg);
-        } else {
-          pending.reject(new Error(msg.message || "Unknown error"));
-        }
+      case "PORTS": {
+        // Resolve pending listPorts request
+        if (requestId) this.resolveRequest(requestId, msg.data);
+        break;
       }
-    } else if (msg.type === "stream") {
-      this.dispatchEvent(
-        new CustomEvent("sensorData", {
-          detail: { pin: msg.pin, value: msg.value },
-        }),
-      );
+
+      case "CONNECTED": {
+        if (requestId) this.resolveRequest(requestId, msg);
+        this.dispatchEvent(
+          new CustomEvent("PORT_CONNECTED", { detail: msg.port }),
+        );
+        break;
+      }
+
+      case "DISCONNECTED": {
+        if (requestId) this.resolveRequest(requestId, msg);
+        this.dispatchEvent(new CustomEvent("PORT_DISCONNECTED"));
+        break;
+      }
+
+      case "SERIAL_DATA": {
+        this.dispatchEvent(
+          new CustomEvent("SERIAL_DATA", { detail: msg.data }),
+        );
+        break;
+      }
+
+      case "COMPILE_STATUS": {
+        this.dispatchEvent(
+          new CustomEvent("COMPILE_STATUS", {
+            detail: { status: msg.status, message: msg.message },
+          }),
+        );
+        break;
+      }
+
+      case "UPLOAD_STATUS": {
+        // Resolve the upload request only on final states
+        if (msg.status === "done" || msg.status === "error") {
+          if (requestId) {
+            if (msg.status === "done") {
+              this.resolveRequest(requestId, msg);
+            } else {
+              this.rejectRequest(
+                requestId,
+                new Error(msg.message || "Upload failed"),
+              );
+            }
+          }
+        }
+        this.dispatchEvent(
+          new CustomEvent("UPLOAD_STATUS", {
+            detail: { status: msg.status, message: msg.message },
+          }),
+        );
+        break;
+      }
+
+      case "ERROR": {
+        if (requestId) {
+          this.rejectRequest(
+            requestId,
+            new Error(msg.message || "Unknown error"),
+          );
+        }
+        this.dispatchEvent(
+          new CustomEvent("LINK_ERROR", { detail: msg.message }),
+        );
+        break;
+      }
     }
   }
 
-  async sendCommand(
-    cmd: string,
-    pin: number | string,
-    value: number | null = null,
-    extra: any = {},
-  ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!this.connected || !this.ws) {
-        reject(new Error("Not connected to hardware bridge"));
-        return;
-      }
+  // --- Public API ---
 
-      const requestID = this.generateId();
-
-      const command: HardwareMessage = {
-        type: "cmd", // This might be redundant if backend only looks at top-level props, but keeping for structure
-        cmd,
-        pin,
-        value: value ?? undefined, // Only send if not null
-        requestID,
-        ...extra,
-      };
-
-      // Timeout Duration
-      const timeOut = setTimeout(() => {
-        this.pendingReq.delete(requestID);
-        reject(new Error("COMMAND TIMEOUT"));
-      }, 5000);
-
-      this.pendingReq.set(requestID, { resolve, reject, timeOut });
-
-      this.ws.send(JSON.stringify(command));
-    });
+  /** List available serial ports */
+  async listPorts(): Promise<SerialPortInfo[]> {
+    return this.sendRequest("LIST_PORTS");
   }
 
-  async setDigitalPin(pin: number | string, value: boolean | number) {
-    return this.sendCommand("digitalWrite", pin, value ? 1 : 0);
+  /** Connect to a serial port */
+  async connectPort(port: string): Promise<any> {
+    return this.sendRequest("CONNECT", { port });
   }
 
-  async setServo(pin: number | string, angle: number) {
-    return this.sendCommand("servoWrite", pin, null, { angle });
+  /** Disconnect from current serial port */
+  async disconnectPort(): Promise<any> {
+    return this.sendRequest("DISCONNECT");
   }
 
-  async startStream(pin: number | string, interval: number = 100) {
-    return this.sendCommand("startStream", pin, null, { interval });
+  /** Compile and upload C++ code */
+  async uploadCode(code: string, port: string): Promise<any> {
+    return this.sendRequest("UPLOAD_CODE", { code, port }, 60000); // 60s timeout for compile+upload
   }
 
-  async stopStream(pin: number | string) {
-    return this.sendCommand("stopStream", pin);
+  /** Send raw serial data */
+  sendData(data: string) {
+    this.sendRaw({ type: "SEND_DATA", payload: data });
   }
 
-  generateId() {
-    return Math.random().toString(36).substring(2, 9);
+  /** Send generated C++ code for display in the Link GUI */
+  sendCode(code: string) {
+    this.sendRaw({ type: "SEND_CODE", code });
   }
 
   disconnect() {
@@ -179,5 +213,59 @@ export class HardwareConnection extends EventTarget {
       this.ws.close();
       this.ws = null;
     }
+  }
+
+  // --- Internal helpers ---
+
+  private sendRequest(
+    type: string,
+    payload: Record<string, any> = {},
+    timeout = 10000,
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.connected || !this.ws) {
+        reject(new Error("Not connected to Eduprime-Link"));
+        return;
+      }
+
+      const requestId = this.generateId();
+
+      const timeOut = setTimeout(() => {
+        this.pendingReq.delete(requestId);
+        reject(new Error(`Request timeout: ${type}`));
+      }, timeout);
+
+      this.pendingReq.set(requestId, { resolve, reject, timeOut });
+
+      this.ws.send(JSON.stringify({ type, requestId, ...payload }));
+    });
+  }
+
+  private sendRaw(data: Record<string, any>) {
+    if (this.connected && this.ws) {
+      this.ws.send(JSON.stringify(data));
+    }
+  }
+
+  private resolveRequest(requestId: string, value: any) {
+    const pending = this.pendingReq.get(requestId);
+    if (pending) {
+      clearTimeout(pending.timeOut);
+      this.pendingReq.delete(requestId);
+      pending.resolve(value);
+    }
+  }
+
+  private rejectRequest(requestId: string, error: Error) {
+    const pending = this.pendingReq.get(requestId);
+    if (pending) {
+      clearTimeout(pending.timeOut);
+      this.pendingReq.delete(requestId);
+      pending.reject(error);
+    }
+  }
+
+  private generateId() {
+    return Math.random().toString(36).substring(2, 9);
   }
 }

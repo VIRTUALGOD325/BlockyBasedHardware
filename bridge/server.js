@@ -82,9 +82,9 @@ wss.on("connection", (ws) => {
 });
 
 // Initialize board connection
-boardManager.initialize().catch((error) => {
-  console.error("Failed to initialize board:", error);
-});
+// boardManager.initialize().catch((error) => {
+//   console.error("Failed to initialize board:", error);
+// });
 
 // Start server
 server.listen(config.port, () => {

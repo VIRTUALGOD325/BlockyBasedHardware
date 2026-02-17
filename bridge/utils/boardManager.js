@@ -17,11 +17,15 @@ class BoardManager {
         try {
             const options = {
                 repl: false,
-                debug: false
+                debug: true,
+                timeout: 30000 // Increase timeout to 30s
             };
             // If port is specified, use it. Otherwise, Johnny-Five auto-detects.
             if (portName) {
+                console.log(`Initializing board on port: ${portName}`);
                 options.port = portName;
+            } else {
+                console.log("Initializing board with auto-detect...");
             }
 
             this.boardInstance = new Board(options);
@@ -58,10 +62,19 @@ class BoardManager {
 
     // Manual connect wrapper
     async connect(portName) {
+        // If we are already connected to this specific port, do nothing.
+        if (this.connectedBoard && this.connectedBoard.port === portName && this.isReady()) {
+            console.log(`Already connected to ${portName}. Skipping re-initialization.`);
+            return;
+        }
+
         // TODO: Handle 'mode' (Wire vs Bluetooth vs BLE) 
         // For now, Wire and Bluetooth Classic are treated the same via SerialPort path.
         if (this.isReady()) {
             await this.disconnect();
+            // Wait for port to be fully released by OS
+            console.log("Waiting for port release...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
         await this.initialize(portName);
     }
@@ -169,7 +182,17 @@ class BoardManager {
     close() {
         this.stopAllStreams();
         if (this.boardInstance) {
-            this.boardInstance.close();
+            try {
+                // Johnny-Five Board doesn't always have a close method, but if it has a port/io that needs closing:
+                if (typeof this.boardInstance.close === 'function') {
+                    this.boardInstance.close();
+                } else {
+                    // Fallback to disconnect logic
+                    this.disconnect();
+                }
+            } catch (e) {
+                console.error("Error closing board instance:", e);
+            }
         }
     }
 

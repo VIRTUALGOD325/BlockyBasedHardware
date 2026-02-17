@@ -27,6 +27,7 @@ export default {
                 { kind: "block", type: "set_pin_mode" },
                 { kind: "block", type: "digital_write" },
                 { kind: "block", type: "digital_read" },
+                { kind: "block", type: "led_control" },
                 { kind: "block", type: "analog_write" },
                 { kind: "block", type: "analog_read" },
             ]

@@ -1,22 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { HardwareConnection } from "../utils/HardwareConnection";
-import { ConnectionStatus, DevicePort, LogMessage } from "../types";
+import { ConnectionStatus, LogMessage } from "../types";
 
 export const useHardware = () => {
   // State
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     ConnectionStatus.DISCONNECTED,
   );
-  const [connectedDevice, setConnectedDevice] = useState<DevicePort | null>(
-    null,
-  );
-  const [sensorValues, setSensorValues] = useState<Record<string, number>>({});
-
+  const [connectedPort, setConnectedPort] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogMessage[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
 
   // Refs
-  // Use a ref for the connection instance to persist it across renders without causing re-renders
   const hwConnection = useRef<HardwareConnection | null>(null);
 
   // Initialize connection instance once
@@ -40,37 +34,71 @@ export const useHardware = () => {
     [],
   );
 
-  // Event Listeners
+  // Event Listeners for the Link WebSocket
   useEffect(() => {
     const connection = hwConnection.current;
     if (!connection) return;
 
     const onConnected = () => {
       setConnectionStatus(ConnectionStatus.CONNECTED);
-      addLog("Hardware bridge connected", "success");
-      addLog("Ready to upload code.", "info");
+      addLog("Eduprime-Link connected", "success");
     };
 
     const onDisconnected = () => {
       setConnectionStatus(ConnectionStatus.DISCONNECTED);
-      setConnectedDevice(null);
-      setIsRunning(false);
-      setSensorValues({}); // Reset sensors
-      addLog("Hardware bridge disconnected", "error");
+      setConnectedPort(null);
+      addLog("Eduprime-Link disconnected", "error");
     };
 
     const onError = (e: Event) => {
       const customEvent = e as CustomEvent;
-      addLog(
-        `Connection error: ${JSON.stringify(customEvent.detail)}`,
-        "error",
-      );
+      addLog(`Connection error: ${customEvent.detail || "Unknown"}`, "error");
     };
 
-    const onSensorData = (e: Event) => {
+    const onReady = () => {
+      addLog("Eduprime-Link ready", "success");
+    };
+
+    const onPortConnected = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const { pin, value } = customEvent.detail;
-      setSensorValues((prev) => ({ ...prev, [pin]: value }));
+      setConnectedPort(customEvent.detail);
+      addLog(`Serial port connected: ${customEvent.detail}`, "success");
+    };
+
+    const onPortDisconnected = () => {
+      setConnectedPort(null);
+      addLog("Serial port disconnected", "info");
+    };
+
+    const onSerialData = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      addLog(`[Serial] ${customEvent.detail}`, "info");
+    };
+
+    const onCompileStatus = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { status, message } = customEvent.detail;
+      if (status === "started") addLog(message || "Compiling...", "info");
+      else if (status === "done") addLog(message || "Compile done", "success");
+      else if (status === "error") addLog(message || "Compile error", "error");
+    };
+
+    const onUploadStatus = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { status, message } = customEvent.detail;
+      if (status === "started") addLog(message || "Uploading...", "info");
+      else if (status === "done") {
+        addLog(message || "Upload successful!", "success");
+        setConnectionStatus(ConnectionStatus.CONNECTED);
+      } else if (status === "error") {
+        addLog(message || "Upload failed", "error");
+        setConnectionStatus(ConnectionStatus.ERROR);
+      }
+    };
+
+    const onLinkError = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      addLog(`Link error: ${customEvent.detail}`, "error");
     };
 
     connection.addEventListener("CONNECTED", onConnected as EventListener);
@@ -79,7 +107,25 @@ export const useHardware = () => {
       onDisconnected as EventListener,
     );
     connection.addEventListener("ERROR", onError as EventListener);
-    connection.addEventListener("sensorData", onSensorData as EventListener);
+    connection.addEventListener("READY", onReady as EventListener);
+    connection.addEventListener(
+      "PORT_CONNECTED",
+      onPortConnected as EventListener,
+    );
+    connection.addEventListener(
+      "PORT_DISCONNECTED",
+      onPortDisconnected as EventListener,
+    );
+    connection.addEventListener("SERIAL_DATA", onSerialData as EventListener);
+    connection.addEventListener(
+      "COMPILE_STATUS",
+      onCompileStatus as EventListener,
+    );
+    connection.addEventListener(
+      "UPLOAD_STATUS",
+      onUploadStatus as EventListener,
+    );
+    connection.addEventListener("LINK_ERROR", onLinkError as EventListener);
 
     return () => {
       connection.removeEventListener("CONNECTED", onConnected as EventListener);
@@ -88,199 +134,160 @@ export const useHardware = () => {
         onDisconnected as EventListener,
       );
       connection.removeEventListener("ERROR", onError as EventListener);
+      connection.removeEventListener("READY", onReady as EventListener);
       connection.removeEventListener(
-        "sensorData",
-        onSensorData as EventListener,
+        "PORT_CONNECTED",
+        onPortConnected as EventListener,
+      );
+      connection.removeEventListener(
+        "PORT_DISCONNECTED",
+        onPortDisconnected as EventListener,
+      );
+      connection.removeEventListener(
+        "SERIAL_DATA",
+        onSerialData as EventListener,
+      );
+      connection.removeEventListener(
+        "COMPILE_STATUS",
+        onCompileStatus as EventListener,
+      );
+      connection.removeEventListener(
+        "UPLOAD_STATUS",
+        onUploadStatus as EventListener,
+      );
+      connection.removeEventListener(
+        "LINK_ERROR",
+        onLinkError as EventListener,
       );
     };
   }, [addLog]);
 
-  const monitorPin = useCallback(
-    async (pin: string | number) => {
-      if (!hwConnection.current) return;
-      try {
-        await hwConnection.current.startStream(pin, 100); // Default 100ms
-        addLog(`Started monitoring pin ${pin}`, "info");
-      } catch (e: any) {
-        addLog(`Failed to monitor pin ${pin}: ${e.message}`, "error");
-      }
-    },
-    [addLog],
-  );
-
-  const stopMonitor = useCallback(
-    async (pin: string | number) => {
-      if (!hwConnection.current) return;
-      try {
-        await hwConnection.current.stopStream(pin);
-        addLog(`Stopped monitoring pin ${pin}`, "info");
-      } catch (e: any) {
-        addLog(`Failed to stop monitoring pin ${pin}: ${e.message}`, "error");
-      }
-    },
-    [addLog],
-  );
-
-  // Actions
-  const connect = useCallback(
-    (port: DevicePort) => {
-      if (!hwConnection.current) return;
-
-      setConnectionStatus(ConnectionStatus.CONNECTING);
-      addLog(`Initiating connection to ${port.name}...`, "info");
-
-      // Optimistically set device (verified by CONNECTED event)
-      setConnectedDevice(port);
-
-      try {
-        hwConnection.current.connect();
-      } catch (e) {
-        addLog(`Failed to connect: ${e}`, "error");
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
-        setConnectedDevice(null);
-      }
-    },
-    [addLog],
-  );
-
-  const disconnect = useCallback(() => {
-    if (connectedDevice) {
-      addLog(`Disconnecting from ${connectedDevice.name}...`, "info");
+  // Auto-connect to Link WebSocket on mount
+  useEffect(() => {
+    const connection = hwConnection.current;
+    if (connection && !connection.connected) {
+      connection.connect();
     }
-    hwConnection.current?.disconnect();
-  }, [connectedDevice, addLog]);
 
-  const runCode = useCallback(
-    async (code: string) => {
-      if (
-        connectionStatus !== ConnectionStatus.CONNECTED ||
-        !hwConnection.current
-      ) {
-        addLog("Cannot run: Hardware not connected", "error");
+    return () => {
+      // Don't disconnect on cleanup — let it persist across re-renders
+    };
+  }, []);
+
+  // --- Actions ---
+
+  /** Connect to the Eduprime-Link WebSocket */
+  const connectToLink = useCallback(() => {
+    setConnectionStatus(ConnectionStatus.CONNECTING);
+    addLog("Connecting to Eduprime-Link...", "info");
+    try {
+      hwConnection.current?.connect();
+    } catch (e) {
+      addLog(`Failed to connect: ${e}`, "error");
+      setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    }
+  }, [addLog]);
+
+  /** Disconnect from the Link WebSocket */
+  const disconnectFromLink = useCallback(() => {
+    addLog("Disconnecting from Eduprime-Link...", "info");
+    hwConnection.current?.disconnect();
+  }, [addLog]);
+
+  /** Scan for available serial ports via the Link */
+  const scanDevices = useCallback(async () => {
+    if (!hwConnection.current?.connected) {
+      addLog("Not connected to Eduprime-Link. Connect first.", "error");
+      return [];
+    }
+
+    try {
+      addLog("Scanning for devices...", "info");
+      const ports = await hwConnection.current.listPorts();
+      addLog(`Found ${ports.length} port(s)`, "success");
+      return ports;
+    } catch (e: any) {
+      addLog(`Scan failed: ${e.message}`, "error");
+      return [];
+    }
+  }, [addLog]);
+
+  /** Connect to a specific serial port through the Link */
+  const connectToDevice = useCallback(
+    async (port: string) => {
+      if (!hwConnection.current?.connected) {
+        addLog("Not connected to Eduprime-Link", "error");
         return;
       }
 
-      setIsRunning(true);
-      addLog("Running code...", "info");
-
+      addLog(`Connecting to ${port}...`, "info");
       try {
-        // Placeholder for actual code execution logic
-        // In a real scenario, this would parse 'code' or execute blockly generators
-
-        // Example test: Toggle Pin 13
-        addLog("Executing logic (Test: Blink Pin 13)...", "info");
-        await hwConnection.current.setDigitalPin(13, 1);
-
-        // Simple delay demonstration
-        setTimeout(async () => {
-          if (hwConnection.current) {
-            await hwConnection.current.setDigitalPin(13, 0);
-            addLog("Execution complete.", "success");
-            setIsRunning(false);
-          }
-        }, 1000);
-      } catch (e) {
-        addLog(`Execution failed: ${e}`, "error");
-        setIsRunning(false);
+        await hwConnection.current.connectPort(port);
+        setConnectedPort(port);
+      } catch (e: any) {
+        addLog(`Connection failed: ${e.message}`, "error");
       }
     },
-    [connectionStatus, addLog],
+    [addLog],
   );
 
-  const stopCode = useCallback(() => {
-    setIsRunning(false);
-    addLog("Execution stopped by user.", "error");
-    // Implement actual stop command if supported by firmware
+  /** Disconnect from the current serial port */
+  const disconnectDevice = useCallback(async () => {
+    if (!hwConnection.current?.connected) return;
+    try {
+      await hwConnection.current.disconnectPort();
+      setConnectedPort(null);
+    } catch (e: any) {
+      addLog(`Disconnect failed: ${e.message}`, "error");
+    }
   }, [addLog]);
 
+  /** Compile and upload C++ code to the connected board */
   const uploadCode = useCallback(
     async (code: string) => {
-      if (!connectedDevice) {
+      if (!connectedPort) {
         addLog("No device connected", "error");
         return;
       }
 
+      if (!hwConnection.current?.connected) {
+        addLog("Not connected to Eduprime-Link", "error");
+        return;
+      }
+
       setConnectionStatus(ConnectionStatus.UPLOADING);
+      addLog("Starting compile and upload...", "info");
+
       try {
-        // Call our new API
-        const response = await fetch("http://localhost:8765/api/upload", {
-          method: "POST",
-          body: JSON.stringify({ code, port: connectedDevice.id }),
-        });
-
-        if (!response.ok) throw new Error("Upload Failed");
-
-        addLog("Upload Successful!", "success");
+        await hwConnection.current.uploadCode(code, connectedPort);
+        addLog("Upload complete!", "success");
         setConnectionStatus(ConnectionStatus.CONNECTED);
       } catch (e: any) {
-        addLog(`Error: ${e.message}`, "error");
+        addLog(`Upload failed: ${e.message}`, "error");
         setConnectionStatus(ConnectionStatus.ERROR);
       }
     },
-    [connectedDevice, addLog],
+    [connectedPort, addLog],
   );
 
-  const scanDevices = useCallback(async () => {
-    try {
-      // Add a small buffer so the UI "Scanning..." state is visible
-      const [response] = await Promise.all([
-        fetch("http://localhost:8765/api/devices"),
-        new Promise((resolve) => setTimeout(resolve, 1000)),
-      ]);
-
-      const data = await response.json();
-      if (data.success) {
-        return data.devices;
-      }
-      return [];
-    } catch (e) {
-      addLog(`Scan failed: ${e}`, "error");
-      return [];
+  /** Send generated C++ code to the Link for display in its GUI */
+  const sendCodeToLink = useCallback((code: string) => {
+    if (hwConnection.current?.connected) {
+      hwConnection.current.sendCode(code);
     }
-  }, [addLog]);
-
-  const connectToDevice = useCallback(
-    async (port: string, mode: "WIRE" | "BT" | "BLE") => {
-      setConnectionStatus(ConnectionStatus.CONNECTING);
-      addLog(`Connecting to ${port} via ${mode}...`, "info");
-
-      try {
-        const response = await fetch("http://localhost:8765/api/connect", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ port, mode }),
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          // The socket connection will confirm the 'CONNECTED' status
-          // We just wait for the event
-        } else {
-          throw new Error(data.error);
-        }
-      } catch (e: any) {
-        addLog(`Connection failed: ${e.message}`, "error");
-        setConnectionStatus(ConnectionStatus.ERROR);
-      }
-    },
-    [addLog],
-  );
+  }, []);
 
   return {
     connectionStatus,
-    connectedDevice,
+    connectedPort,
     logs,
-    isRunning,
-    sensorValues, // Export sensor values
-    connect,
-    disconnect,
-    runCode,
-    stopCode,
+    connectToLink,
+    disconnectFromLink,
+    scanDevices,
+    connectToDevice,
+    disconnectDevice,
     uploadCode,
-    monitorPin, // Export monitor function
-    stopMonitor, // Export stop monitor function
+    sendCodeToLink,
     addLog,
-    scanDevices, // New
-    connectToDevice, // New
   };
 };

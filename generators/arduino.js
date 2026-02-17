@@ -44,14 +44,18 @@ arduinoGen.variables_ = {}; // global variable declarations
 
 //Overiding Core 
 arduinoGen.init = function (workspace) {
-  // Reseting variables to empty objects
+  // Reset custom collections
   this.includes_ = {};
   this.setupCode_ = {};
   this.variables_ = {};
 
-  // Call default nameDB init if needed
-  this.nameDB_ = new Names(workspace);
-  // this.nameDB_.init(); // This might not be needed if Names constructor handles it, but following pattern
+  // Names constructor takes a reserved-words string (comma-separated)
+  // These are C/C++ reserved words that should not be used as variable names
+  const reservedWords = 'setup,loop,if,else,for,switch,case,while,do,break,continue,return,goto,' +
+    'define,include,HIGH,LOW,INPUT,OUTPUT,INPUT_PULLUP,true,false,int,float,long,' +
+    'double,char,boolean,byte,short,unsigned,void,string,String,NULL,sizeof,' +
+    'analogRead,analogWrite,digitalRead,digitalWrite,pinMode,Serial,delay,millis,micros';
+  this.nameDB_ = new Names(reservedWords);
 };
 
 arduinoGen.finish = function (code) {
@@ -72,14 +76,17 @@ void loop() {
 }`;
 };
 
-arduinoGen.scrubNakedValue = (line) => {
+arduinoGen.scrubNakedValue = function (line) {
   return line + ';\n';
 };
 
-arduinoGen.scrub_ = (block, code, thisOnly) => {
-  const nextBlock = block.nextConnection?.targetBlock()
-  const nextCode = thisOnly ? '' : arduinoGen.blockToCode(nextBlock)
-  return code + nextCode
+arduinoGen.scrub_ = function (block, code, thisOnly) {
+  const nextBlock = block.nextConnection && block.nextConnection.targetBlock();
+  if (nextBlock && !thisOnly) {
+    const nextCode = arduinoGen.blockToCode(nextBlock);
+    return code + nextCode;
+  }
+  return code;
 };
 
 export { arduinoGen };

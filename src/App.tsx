@@ -6,51 +6,79 @@ import { useTheme } from "./hooks/useTheme";
 import { useHardware } from "./hooks/useHardware";
 import { Terminal } from "lucide-react";
 import { ConnectionModal } from "./components/ConnectionModal";
-import { DevicePort } from "./types";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { SerialPortInfo } from "./utils/HardwareConnection";
 
 const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
-  // Hardware Hook
+  // Hardware Hook (now talks to Eduprime-Link via WebSocket)
   const {
     connectionStatus,
+    connectedPort,
     logs,
-    isRunning,
-    connect, // This is the old auto-connect logic mostly
-    disconnect,
-    runCode,
-    stopCode,
+    connectToLink,
+    disconnectFromLink,
     scanDevices,
     connectToDevice,
+    disconnectDevice,
+    uploadCode,
+    sendCodeToLink,
+    addLog,
   } = useHardware();
 
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [devices, setDevices] = useState<DevicePort[]>([]);
+  const [devices, setDevices] = useState<SerialPortInfo[]>([]);
   const [isScanning, setIsScanning] = useState(false);
 
+  // Store generated code so we can send it for upload
+  const generatedCodeRef = useRef<string>("");
+
   const handleCodeChange = (code: string) => {
-    // We could auto-save or preview generated code here
-    // console.log("Code updated:", code);
+    generatedCodeRef.current = code;
+    // Also send to the Link GUI for display
+    sendCodeToLink(code);
   };
 
   const handleOpenConnectModal = useCallback(async () => {
     setIsModalOpen(true);
     setIsScanning(true);
-    const foundkwDevices = await scanDevices();
-    // Map API response to DevicePort type if needed, but api returns matching structure mostly
-    setDevices(foundkwDevices);
+    const foundDevices = await scanDevices();
+    setDevices(foundDevices);
     setIsScanning(false);
   }, [scanDevices]);
 
   const handleConnect = useCallback(
-    async (port: string, mode: "WIRE" | "BT" | "BLE") => {
-      await connectToDevice(port, mode);
+    async (port: string) => {
+      await connectToDevice(port);
       setIsModalOpen(false);
     },
     [connectToDevice],
   );
+
+  // Upload — sends code to Link GUI for preview, then user uploads from there
+  const handleUpload = useCallback(() => {
+    const code = generatedCodeRef.current;
+    if (!code.trim()) {
+      addLog("No code to upload. Add some blocks first.", "error");
+      return;
+    }
+    // Send to Link GUI for preview
+    sendCodeToLink(code);
+    addLog("Code sent to Link GUI for preview", "info");
+  }, [sendCodeToLink, addLog]);
+
+  // Run Code — one-click: convert blocks → C++ → upload directly
+  const handleRunCode = useCallback(() => {
+    const code = generatedCodeRef.current;
+    if (!code.trim()) {
+      addLog("No code to run. Add some blocks first.", "error");
+      return;
+    }
+    sendCodeToLink(code); // Also update Link GUI display
+    uploadCode(code); // Start compile + upload immediately
+  }, [uploadCode, sendCodeToLink, addLog]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -59,11 +87,13 @@ const App: React.FC = () => {
         theme={theme}
         toggleTheme={toggleTheme}
         connectionStatus={connectionStatus}
-        onConnect={handleOpenConnectModal} // Open modal instead of auto-connect
-        onDisconnect={disconnect}
-        onRun={() => runCode("TODO: Get Block Code")} // We need to get the code from editor
-        onStop={stopCode}
-        isRunning={isRunning}
+        connectedPort={connectedPort}
+        onConnectLink={connectToLink}
+        onDisconnectLink={disconnectFromLink}
+        onOpenDeviceModal={handleOpenConnectModal}
+        onDisconnectDevice={disconnectDevice}
+        onUpload={handleUpload}
+        onRunCode={handleRunCode}
       />
 
       <ConnectionModal

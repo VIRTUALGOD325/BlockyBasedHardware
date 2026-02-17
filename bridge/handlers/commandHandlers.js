@@ -6,7 +6,7 @@ const { Servo } = five;
 
 // Digital Write Handler
 export const handleDigitalWrite = (ws, pin, value) => {
-    try {
+    try { 
         const board = boardManager.getBoard();
         board.pinMode(pin, board.MODES.OUTPUT);
         board.digitalWrite(pin, value);

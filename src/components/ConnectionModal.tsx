@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { DevicePort } from "../types";
+import { SerialPortInfo } from "../utils/HardwareConnection";
 
 interface ConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: (port: string, mode: "WIRE" | "BT" | "BLE") => void;
+  onConnect: (port: string) => void;
   isScanning: boolean;
-  devices: DevicePort[];
+  devices: SerialPortInfo[];
   scanDevices: () => void;
 }
 
@@ -18,9 +18,6 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   devices,
   scanDevices,
 }) => {
-  const [selectedMode, setSelectedMode] = useState<"WIRE" | "BT" | "BLE">(
-    "WIRE",
-  );
   const [selectedPort, setSelectedPort] = useState<string>("");
 
   useEffect(() => {
@@ -33,7 +30,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
   const handleConnect = () => {
     if (selectedPort) {
-      onConnect(selectedPort, selectedMode);
+      onConnect(selectedPort);
       onClose();
     }
   };
@@ -42,40 +39,14 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
-          Connect Hardware
+          Select Device
         </h2>
-
-        {/* Mode Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Connection Mode
-          </label>
-          <div className="flex space-x-2">
-            {(["WIRE", "BT", "BLE"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setSelectedMode(mode)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  selectedMode === mode
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-                }`}
-              >
-                {mode === "WIRE"
-                  ? "USB Wire"
-                  : mode === "BT"
-                    ? "Bluetooth"
-                    : "BLE"}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Device List */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Select Device
+              Available Ports
             </label>
             <button
               onClick={scanDevices}
@@ -89,7 +60,9 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
           <div className="border border-gray-300 dark:border-gray-600 rounded-md max-h-40 overflow-y-auto">
             {devices.length === 0 ? (
               <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                No devices found. Check connection or drivers.
+                {isScanning
+                  ? "Scanning for devices..."
+                  : "No devices found. Check connection or drivers."}
               </div>
             ) : (
               devices.map((device) => (
