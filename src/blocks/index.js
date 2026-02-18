@@ -1,7 +1,9 @@
 // Self register thanks to defineblocksarray func
 
-import './gpio';
-import './analog';
+import './pins';
 import './timing';
+import './data';
 import './sensors';
 import './actuators';
+import './events';
+import './serial';

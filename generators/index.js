@@ -1,6 +1,10 @@
-import './gpio'
-import './analog'
+import './builtins'
+import './builtins'
+import './pins'
 import './timings'
+import './data'
 import './sensors'
 import './actuators'
+import './events'
+import './serial'
 // All generator functions are now registered on arduinoGenerator

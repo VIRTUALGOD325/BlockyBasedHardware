@@ -1,263 +1,245 @@
-
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 // Importing from the shim defined in importmap which exports window.Blockly
-import * as BlocklyFromModule from 'blockly';
-import { BLOCKLY_TOOLBOX } from '../constants';
+import * as BlocklyFromModule from "blockly";
+import { BLOCKLY_TOOLBOX } from "../constants";
 // Import all custom blocks - they auto-register via defineBlocksWithJsonArray
-import '../blocks';
+import "../blocks";
+// Import Arduino code generator and register all generator functions
+import { arduinoGen } from "../../generators/arduino";
+import "../../generators";
 
 // Handle potential default export mismatch from our shim
 // @ts-ignore
 const Blockly = BlocklyFromModule.default || BlocklyFromModule;
 
 interface BlocklyEditorProps {
-  themeMode: 'light' | 'dark';
+  themeMode: "light" | "dark";
   onCodeChange: (code: string) => void;
 }
 
-export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({ themeMode, onCodeChange }) => {
+export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
+  themeMode,
+  onCodeChange,
+}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
-  // Use 'any' for the ref type to avoid TS issues with the global Blockly types not being perfectly matched
   const workspaceRef = useRef<any>(null);
   const themesRef = useRef<{ dark: any; light: any } | null>(null);
 
+  // Initialize Blockly Workspace (Run Once)
   useEffect(() => {
-    // Blocks are auto-registered via imports in blocks/index.js
-    // No need to manually register them
+    if (!blocklyDiv.current) return;
 
-    if (blocklyDiv.current) {
-      // Use Scratch-like theme (Zelos-based) with rounded blocks
-      const scratchTheme = Blockly.Theme.defineTheme('scratch', {
-        name: 'scratch',
-        base: Blockly.Themes.Zelos || Blockly.Themes.Classic,
-        blockStyles: {
-          // Control blocks - bright blue
-          control_blocks: {
-            colourPrimary: '#4C97FF',
-            colourSecondary: '#4280D7',
-            colourTertiary: '#3373CC'
-          },
-          // GPIO blocks - red
-          gpio_blocks: {
-            colourPrimary: '#FF6680',
-            colourSecondary: '#E64C3C',
-            colourTertiary: '#CC3333'
-          },
-          // Sensor blocks - green
-          sensor_blocks: {
-            colourPrimary: '#4CBFE6',
-            colourSecondary: '#2E8EB8',
-            colourTertiary: '#2E8EB8'
-          },
-          // Actuator blocks - orange
-          actuator_blocks: {
-            colourPrimary: '#FFAB19',
-            colourSecondary: '#EC9C13',
-            colourTertiary: '#CF8B17'
-          },
-          // Math blocks - blue-purple
-          math_blocks: {
-            colourPrimary: '#59C059',
-            colourSecondary: '#46A329',
-            colourTertiary: '#389438'
-          },
-          // Logic blocks - green
-          logic_blocks: {
-            colourPrimary: '#59C059',
-            colourSecondary: '#46A329',
-            colourTertiary: '#389438'
-          }
+    // Define Themes
+    const scratchTheme = Blockly.Theme.defineTheme("scratch", {
+      name: "scratch",
+      base: Blockly.Themes.Zelos || Blockly.Themes.Classic,
+      blockStyles: {
+        control_blocks: {
+          colourPrimary: "#4C97FF",
+          colourSecondary: "#4280D7",
+          colourTertiary: "#3373CC",
         },
-        categoryStyles: {
-          control_category: {
-            colour: '#4C97FF'
-          },
-          gpio_category: {
-            colour: '#FF6680'
-          },
-          sensor_category: {
-            colour: '#4CBFE6'
-          },
-          actuator_category: {
-            colour: '#FFAB19'
-          },
-          math_category: {
-            colour: '#59C059'
-          },
-          logic_category: {
-            colour: '#59C059'
-          }
+        gpio_blocks: {
+          colourPrimary: "#FF6680",
+          colourSecondary: "#E64C3C",
+          colourTertiary: "#CC3333",
         },
-        componentStyles: {
-          workspaceBackgroundColour: '#F9F9F9',
-          toolboxBackgroundColour: '#FFFFFF',
-          toolboxForegroundColour: '#575E75',
-          flyoutBackgroundColour: '#F9F9F9',
-          flyoutOpacity: 1,
-          scrollbarColour: '#C1C1C1',
-          insertionMarkerColour: '#000000',
-          markerColour: '#FF0000',
-          cursorColour: '#000000'
+        sensor_blocks: {
+          colourPrimary: "#4CBFE6",
+          colourSecondary: "#2E8EB8",
+          colourTertiary: "#2E8EB8",
         },
-        fontStyle: {
-          family: '"Helvetica Neue", Helvetica, sans-serif',
-          weight: 'normal',
-          size: 12
-        }
-      });
+        actuator_blocks: {
+          colourPrimary: "#FFAB19",
+          colourSecondary: "#EC9C13",
+          colourTertiary: "#CF8B17",
+        },
+        math_blocks: {
+          colourPrimary: "#59C059",
+          colourSecondary: "#46A329",
+          colourTertiary: "#389438",
+        },
+        logic_blocks: {
+          colourPrimary: "#59C059",
+          colourSecondary: "#46A329",
+          colourTertiary: "#389438",
+        },
+      },
+      categoryStyles: {
+        control_category: { colour: "#4C97FF" },
+        gpio_category: { colour: "#FF6680" },
+        sensor_category: { colour: "#4CBFE6" },
+        actuator_category: { colour: "#FFAB19" },
+        math_category: { colour: "#59C059" },
+        logic_category: { colour: "#59C059" },
+      },
+      componentStyles: {
+        workspaceBackgroundColour: "#F9F9F9",
+        toolboxBackgroundColour: "#FFFFFF",
+        toolboxForegroundColour: "#575E75",
+        flyoutBackgroundColour: "#F9F9F9",
+        flyoutOpacity: 1,
+        scrollbarColour: "#C1C1C1",
+        insertionMarkerColour: "#000000",
+        markerColour: "#FF0000",
+        cursorColour: "#000000",
+      },
+      fontStyle: {
+        family: '"Helvetica Neue", Helvetica, sans-serif',
+        weight: "normal",
+        size: 12,
+      },
+    });
 
-      // Dark theme variant
-      const scratchDarkTheme = Blockly.Theme.defineTheme('scratch-dark', {
-        name: 'scratch-dark',
-        base: Blockly.Themes.Zelos || Blockly.Themes.Classic,
-        blockStyles: {
-          control_blocks: {
-            colourPrimary: '#4C97FF',
-            colourSecondary: '#4280D7',
-            colourTertiary: '#3373CC'
-          },
-          gpio_blocks: {
-            colourPrimary: '#FF6680',
-            colourSecondary: '#E64C3C',
-            colourTertiary: '#CC3333'
-          },
-          sensor_blocks: {
-            colourPrimary: '#4CBFE6',
-            colourSecondary: '#2E8EB8',
-            colourTertiary: '#2E8EB8'
-          },
-          actuator_blocks: {
-            colourPrimary: '#FFAB19',
-            colourSecondary: '#EC9C13',
-            colourTertiary: '#CF8B17'
-          },
-          math_blocks: {
-            colourPrimary: '#59C059',
-            colourSecondary: '#46A329',
-            colourTertiary: '#389438'
-          },
-          logic_blocks: {
-            colourPrimary: '#59C059',
-            colourSecondary: '#46A329',
-            colourTertiary: '#389438'
-          }
+    const scratchDarkTheme = Blockly.Theme.defineTheme("scratch-dark", {
+      name: "scratch-dark",
+      base: Blockly.Themes.Zelos || Blockly.Themes.Classic,
+      blockStyles: {
+        control_blocks: {
+          colourPrimary: "#4C97FF",
+          colourSecondary: "#4280D7",
+          colourTertiary: "#3373CC",
         },
-        categoryStyles: {
-          control_category: {
-            colour: '#4C97FF'
-          },
-          gpio_category: {
-            colour: '#FF6680'
-          },
-          sensor_category: {
-            colour: '#4CBFE6'
-          },
-          actuator_category: {
-            colour: '#FFAB19'
-          },
-          math_category: {
-            colour: '#59C059'
-          },
-          logic_category: {
-            colour: '#59C059'
-          }
+        gpio_blocks: {
+          colourPrimary: "#FF6680",
+          colourSecondary: "#E64C3C",
+          colourTertiary: "#CC3333",
         },
-        componentStyles: {
-          workspaceBackgroundColour: '#1A1A1A',
-          toolboxBackgroundColour: '#2D2D2D',
-          toolboxForegroundColour: '#FFFFFF',
-          flyoutBackgroundColour: '#252525',
-          flyoutOpacity: 1,
-          scrollbarColour: '#555555',
-          insertionMarkerColour: '#FFFFFF',
-          markerColour: '#FF0000',
-          cursorColour: '#FFFFFF'
+        sensor_blocks: {
+          colourPrimary: "#4CBFE6",
+          colourSecondary: "#2E8EB8",
+          colourTertiary: "#2E8EB8",
         },
-        fontStyle: {
-          family: '"Helvetica Neue", Helvetica, sans-serif',
-          weight: 'normal',
-          size: 12
-        }
-      });
+        actuator_blocks: {
+          colourPrimary: "#FFAB19",
+          colourSecondary: "#EC9C13",
+          colourTertiary: "#CF8B17",
+        },
+        math_blocks: {
+          colourPrimary: "#59C059",
+          colourSecondary: "#46A329",
+          colourTertiary: "#389438",
+        },
+        logic_blocks: {
+          colourPrimary: "#59C059",
+          colourSecondary: "#46A329",
+          colourTertiary: "#389438",
+        },
+      },
+      categoryStyles: {
+        control_category: { colour: "#4C97FF" },
+        gpio_category: { colour: "#FF6680" },
+        sensor_category: { colour: "#4CBFE6" },
+        actuator_category: { colour: "#FFAB19" },
+        math_category: { colour: "#59C059" },
+        logic_category: { colour: "#59C059" },
+      },
+      componentStyles: {
+        workspaceBackgroundColour: "#1A1A1A",
+        toolboxBackgroundColour: "#2D2D2D",
+        toolboxForegroundColour: "#FFFFFF",
+        flyoutBackgroundColour: "#252525",
+        flyoutOpacity: 1,
+        scrollbarColour: "#555555",
+        insertionMarkerColour: "#FFFFFF",
+        markerColour: "#FF0000",
+        cursorColour: "#FFFFFF",
+      },
+      fontStyle: {
+        family: '"Helvetica Neue", Helvetica, sans-serif',
+        weight: "normal",
+        size: 12,
+      },
+    });
 
-      // Store themes in ref for later access
-      themesRef.current = { dark: scratchDarkTheme, light: scratchTheme };
+    themesRef.current = { dark: scratchDarkTheme, light: scratchTheme };
 
-      // Dispose if exists (safely)
+    // Inject Workspace
+    workspaceRef.current = Blockly.inject(blocklyDiv.current, {
+      toolbox: BLOCKLY_TOOLBOX,
+      theme: themeMode === "dark" ? scratchDarkTheme : scratchTheme,
+      renderer: "zelos",
+      grid: {
+        spacing: 20,
+        length: 3,
+        colour: themeMode === "dark" ? "#444444" : "#E5E5E5",
+        snap: true,
+      },
+      zoom: {
+        controls: true,
+        wheel: true,
+        startScale: 1.0,
+        maxScale: 3,
+        minScale: 0.3,
+        scaleSpeed: 1.2,
+      },
+      trashcan: true,
+      media: "https://unpkg.com/blockly@12.3.1/media/",
+    });
+
+    // Observe container size changes and tell Blockly to resize
+    const resizeObserver = new ResizeObserver(() => {
       if (workspaceRef.current) {
-          try {
-              workspaceRef.current.dispose();
-          } catch (e) {
-              // Ignore disposal errors (workspace may already be disposed)
-              console.warn('Workspace disposal warning:', e);
-          }
-          workspaceRef.current = null;
+        Blockly.svgResize(workspaceRef.current);
       }
-
-      workspaceRef.current = Blockly.inject(blocklyDiv.current, {
-        toolbox: BLOCKLY_TOOLBOX,
-        theme: themeMode === 'dark' ? scratchDarkTheme : scratchTheme,
-        renderer: 'zelos', // Use Zelos renderer for Scratch-like rounded blocks
-        grid: {
-          spacing: 20,
-          length: 3,
-          colour: themeMode === 'dark' ? '#444444' : '#E5E5E5',
-          snap: true,
-        },
-        zoom: {
-          controls: true,
-          wheel: true,
-          startScale: 1.0,
-          maxScale: 3,
-          minScale: 0.3,
-          scaleSpeed: 1.2,
-        },
-        trashcan: true,
-        // Point to unpkg media to ensure icons load correctly
-        media: 'https://unpkg.com/blockly@12.3.1/media/' 
-      });
-
-      // Add change listener to generate code (simulated)
-      const onWorkspaceChange = () => {
-         // In a real app, we would use a generator like Blockly.Python.workspaceToCode(workspaceRef.current);
-         // For now, we just count blocks to show activity.
-         const count = workspaceRef.current?.getAllBlocks(false).length || 0;
-         onCodeChange(`// Logic generated from ${count} blocks\n// Ready to compile...`);
-      };
-      
-      workspaceRef.current.addChangeListener(onWorkspaceChange);
+    });
+    if (blocklyDiv.current) {
+      resizeObserver.observe(blocklyDiv.current);
     }
 
     return () => {
+      resizeObserver.disconnect();
       if (workspaceRef.current) {
-        try {
-          workspaceRef.current.dispose();
-        } catch (e) {
-          // Ignore disposal errors (workspace may already be disposed)
-          console.warn('Workspace cleanup warning:', e);
-        }
-        workspaceRef.current = null;
+        workspaceRef.current.dispose();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
-  // Handle Theme Update dynamically
+  // Handle Theme Updates
   useEffect(() => {
     if (workspaceRef.current && themesRef.current) {
-        const themeToUse = themeMode === 'dark' ? themesRef.current.dark : themesRef.current.light;
-        if (themeToUse) {
-            workspaceRef.current.setTheme(themeToUse);
-        }
+      const themeToUse =
+        themeMode === "dark" ? themesRef.current.dark : themesRef.current.light;
+      if (themeToUse) {
+        workspaceRef.current.setTheme(themeToUse);
+      }
     }
   }, [themeMode]);
 
+  // Handle Code Generation & Listeners
+  useEffect(() => {
+    if (!workspaceRef.current) return;
+
+    const onWorkspaceChange = () => {
+      try {
+        const code = arduinoGen.workspaceToCode(workspaceRef.current);
+        onCodeChange(code ?? "");
+      } catch (e) {
+        console.error("[BlocklyEditor] Code generation error:", e);
+      }
+    };
+
+    // Generate initial code
+    onWorkspaceChange();
+
+    // Attach listener
+    const listenerPromise =
+      workspaceRef.current.addChangeListener(onWorkspaceChange);
+
+    return () => {
+      if (workspaceRef.current) {
+        workspaceRef.current.removeChangeListener(listenerPromise);
+      }
+    };
+  }, [onCodeChange]);
+
   return (
     <div className="w-full h-full relative group">
-      <div 
-        ref={blocklyDiv} 
-        className="absolute inset-0 z-10" 
-        style={{ width: '100%', height: '100%' }}
+      <div
+        ref={blocklyDiv}
+        className="absolute inset-0 z-10"
+        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );

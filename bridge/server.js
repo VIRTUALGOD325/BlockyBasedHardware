@@ -21,6 +21,16 @@ app.use(express.json());
 // API Routes
 app.use("/api", apiRouter);
 
+// Health Check Endpoint
+app.get("/health", (req, res) => {
+  const boardInfo = boardManager.getBoardInfo();
+  res.json({
+    status: "ok",
+    board: boardInfo ? { connected: true, type: boardInfo.type } : { connected: false },
+    timestamp: Date.now()
+  });
+});
+
 // WebSocket Connection Handling
 
 // WebSocket Connection Handling
@@ -72,9 +82,9 @@ wss.on("connection", (ws) => {
 });
 
 // Initialize board connection
-boardManager.initialize().catch((error) => {
-  console.error("Failed to initialize board:", error);
-});
+// boardManager.initialize().catch((error) => {
+//   console.error("Failed to initialize board:", error);
+// });
 
 // Start server
 server.listen(config.port, () => {
