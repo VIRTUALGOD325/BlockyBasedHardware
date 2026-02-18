@@ -52,3 +52,14 @@ arduinoGen.forBlock['read_ir'] = function (block) {
 }
 
 
+// Timer
+arduinoGen.forBlock['timer'] = function (_block) {
+    arduinoGen.definitions_['timer_offset'] = 'long timerOffset = 0;';
+    return ['(millis() - timerOffset) / 1000.0', Order.ATOMIC];
+};
+
+// Reset Timer
+arduinoGen.forBlock['reset_timer'] = function (_block) {
+    arduinoGen.definitions_['timer_offset'] = 'long timerOffset = 0;';
+    return 'timerOffset = millis();\n';
+};

@@ -3,16 +3,18 @@ import * as blockly from "blockly";
 blockly.common.defineBlocksWithJsonArray([
     {
         "type": "read_ultrasonic",
-        "message0": "ultrasonic distance trig %1 echo %2",
+        "message0": "read ultrasonic sensor trig pin %1 echo pin %2",
         "args0": [{
             "type": "field_number",
             "name": "TRIG",
-            "default": 9
+            "value": 1,
+            "min": 0
         },
         {
             "type": "field_number",
             "name": "ECHO",
-            "default": 10
+            "value": 1,
+            "min": 0
         }],
         "output": "Number",
         "colour": "#4CBFE6",
@@ -33,7 +35,8 @@ blockly.common.defineBlocksWithJsonArray([
             {
                 "type": "field_number",
                 "name": "PIN",
-                "default": 4
+                "value": 4,
+                "min": 0
             },
             {
                 "type": "field_dropdown",
@@ -55,12 +58,28 @@ blockly.common.defineBlocksWithJsonArray([
             {
                 "type": "field_number",
                 "name": "PIN",
-                "default": 11
+                "value": 11,
+                "min": 0
             }
         ],
         "output": "Number",
         "colour": "#4CBFE6",
         "tooltip": "Reads value from IR receiver"
+    },
+    {
+        "type": "timer",
+        "message0": "timer",
+        "output": "Number",
+        "colour": "#4CBFE6",
+        "tooltip": "Returns the number of seconds since the program started (or since last reset)"
+    },
+    {
+        "type": "reset_timer",
+        "message0": "reset timer",
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#4CBFE6",
+        "tooltip": "Resets the timer to 0"
     }
 ])
 

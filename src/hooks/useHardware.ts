@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { HardwareConnection } from "../utils/HardwareConnection";
 import { ConnectionStatus, LogMessage } from "../types";
+import { SerialLine } from "../components/SerialMonitor";
 
 export const useHardware = () => {
   // State
@@ -9,9 +10,13 @@ export const useHardware = () => {
   );
   const [connectedPort, setConnectedPort] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogMessage[]>([]);
+  const [serialLines, setSerialLines] = useState<SerialLine[]>([]);
 
   // Refs
   const hwConnection = useRef<HardwareConnection | null>(null);
+  const lastCodeRef = useRef<string>(""); // cache last generated code
+  const serialBufferRef = useRef<string>(""); // buffer for partial serial data
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null); // auto-flush timer
 
   // Initialize connection instance once
   if (!hwConnection.current) {
@@ -57,6 +62,10 @@ export const useHardware = () => {
 
     const onReady = () => {
       addLog("Eduprime-Link ready", "success");
+      // Re-send the last generated code so the Link editor is always populated
+      if (lastCodeRef.current && hwConnection.current?.connected) {
+        hwConnection.current.sendCode(lastCodeRef.current);
+      }
     };
 
     const onPortConnected = (e: Event) => {
@@ -70,9 +79,65 @@ export const useHardware = () => {
       addLog("Serial port disconnected", "info");
     };
 
+    // Helper to flush whatever is in the serial buffer as a line
+    const flushSerialBuffer = () => {
+      if (serialBufferRef.current.length > 0) {
+        const text = serialBufferRef.current.replace(/\r$/, "");
+        serialBufferRef.current = "";
+        setSerialLines((prev) => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substr(2, 9),
+            text,
+            direction: "rx" as const,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+    };
+
     const onSerialData = (e: Event) => {
       const customEvent = e as CustomEvent;
-      addLog(`[Serial] ${customEvent.detail}`, "info");
+      const raw: string = customEvent.detail ?? "";
+
+      // Accumulate data in buffer
+      serialBufferRef.current += raw;
+
+      // Split on \n to find complete lines
+      const parts = serialBufferRef.current.split("\n");
+
+      // Last element is leftover (partial line or "" if data ended with \n)
+      serialBufferRef.current = parts.pop() ?? "";
+
+      // Flush all complete lines immediately
+      if (parts.length > 0) {
+        // If a flush timer was pending, clear it since we're flushing now
+        if (flushTimerRef.current) {
+          clearTimeout(flushTimerRef.current);
+          flushTimerRef.current = null;
+        }
+        setSerialLines((prev) => [
+          ...prev,
+          ...parts.map((line) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            text: line.replace(/\r$/, ""),
+            direction: "rx" as const,
+            timestamp: new Date(),
+          })),
+        ]);
+      }
+
+      // If there's leftover data (no trailing \n) and no timer pending,
+      // schedule a flush after 100ms. DON'T cancel existing timers —
+      // this ensures Serial.print() without newline still shows data
+      // even when data arrives continuously.
+      if (serialBufferRef.current.length > 0 && !flushTimerRef.current) {
+        flushTimerRef.current = setTimeout(flushSerialBuffer, 100);
+      }
     };
 
     const onCompileStatus = (e: Event) => {
@@ -159,6 +224,11 @@ export const useHardware = () => {
         "LINK_ERROR",
         onLinkError as EventListener,
       );
+      // Clean up flush timer
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
     };
   }, [addLog]);
 
@@ -214,15 +284,15 @@ export const useHardware = () => {
 
   /** Connect to a specific serial port through the Link */
   const connectToDevice = useCallback(
-    async (port: string) => {
+    async (port: string, baudRate: number = 9600) => {
       if (!hwConnection.current?.connected) {
         addLog("Not connected to Eduprime-Link", "error");
         return;
       }
 
-      addLog(`Connecting to ${port}...`, "info");
+      addLog(`Connecting to ${port} at ${baudRate} baud...`, "info");
       try {
-        await hwConnection.current.connectPort(port);
+        await hwConnection.current.connectPort(port, baudRate);
         setConnectedPort(port);
       } catch (e: any) {
         addLog(`Connection failed: ${e.message}`, "error");
@@ -272,8 +342,35 @@ export const useHardware = () => {
 
   /** Send generated C++ code to the Link for display in its GUI */
   const sendCodeToLink = useCallback((code: string) => {
+    lastCodeRef.current = code; // always cache, even if not connected yet
     if (hwConnection.current?.connected) {
       hwConnection.current.sendCode(code);
+    }
+  }, []);
+
+  /** Send raw serial data to the connected device */
+  const sendSerialData = useCallback((data: string) => {
+    if (!hwConnection.current?.connected) return;
+    hwConnection.current.sendData(data);
+    // Echo TX line into the serial monitor
+    setSerialLines((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        text: data.replace(/[\r\n]+$/, ""),
+        direction: "tx" as const,
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
+
+  /** Clear all serial monitor lines */
+  const clearSerialLines = useCallback(() => {
+    setSerialLines([]);
+    serialBufferRef.current = "";
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
     }
   }, []);
 
@@ -281,6 +378,7 @@ export const useHardware = () => {
     connectionStatus,
     connectedPort,
     logs,
+    serialLines,
     connectToLink,
     disconnectFromLink,
     scanDevices,
@@ -288,6 +386,8 @@ export const useHardware = () => {
     disconnectDevice,
     uploadCode,
     sendCodeToLink,
+    sendSerialData,
+    clearSerialLines,
     addLog,
   };
 };

@@ -2,6 +2,7 @@ import React from "react";
 import { Header } from "./components/Header";
 import { BlocklyEditor } from "./components/BlocklyEditor";
 import { ConsolePanel } from "./components/ConsolePanel";
+import { SerialMonitor } from "./components/SerialMonitor";
 import { useTheme } from "./hooks/useTheme";
 import { useHardware } from "./hooks/useHardware";
 import { Terminal } from "lucide-react";
@@ -17,6 +18,7 @@ const App: React.FC = () => {
     connectionStatus,
     connectedPort,
     logs,
+    serialLines,
     connectToLink,
     disconnectFromLink,
     scanDevices,
@@ -24,10 +26,13 @@ const App: React.FC = () => {
     disconnectDevice,
     uploadCode,
     sendCodeToLink,
+    sendSerialData,
+    clearSerialLines,
     addLog,
   } = useHardware();
 
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
+  const [isSerialMonitorOpen, setIsSerialMonitorOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [devices, setDevices] = useState<SerialPortInfo[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -94,6 +99,8 @@ const App: React.FC = () => {
         onDisconnectDevice={disconnectDevice}
         onUpload={handleUpload}
         onRunCode={handleRunCode}
+        isSerialMonitorOpen={isSerialMonitorOpen}
+        onToggleSerialMonitor={() => setIsSerialMonitorOpen((v) => !v)}
       />
 
       <ConnectionModal
@@ -123,15 +130,41 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Console/Logs Panel */}
+        {/* Right: Console + Serial Monitor panels */}
         <div
-          className={`${isConsoleOpen ? "w-80 md:w-96" : "w-0"} transition-all duration-300 ease-in-out overflow-hidden h-full z-10`}
+          className={`${
+            isConsoleOpen || isSerialMonitorOpen ? "w-80 md:w-96" : "w-0"
+          } transition-all duration-300 ease-in-out overflow-hidden h-full z-10 flex flex-col`}
         >
-          <ConsolePanel
-            logs={logs}
-            isOpen={isConsoleOpen}
-            onClose={() => setIsConsoleOpen(false)}
-          />
+          {/* Device Console (top half) */}
+          {isConsoleOpen && (
+            <div className="flex-1 overflow-hidden border-b border-gray-200 dark:border-gray-700">
+              <ConsolePanel
+                logs={logs}
+                isOpen={isConsoleOpen}
+                onClose={() => setIsConsoleOpen(false)}
+              />
+            </div>
+          )}
+
+          {/* Serial Monitor (bottom half) */}
+          {isSerialMonitorOpen && (
+            <div className="flex-1 overflow-hidden">
+              <SerialMonitor
+                lines={serialLines}
+                isOpen={isSerialMonitorOpen}
+                onClose={() => setIsSerialMonitorOpen(false)}
+                onSend={sendSerialData}
+                onClear={clearSerialLines}
+                onBaudRateChange={(newBaud) => {
+                  if (connectedPort) {
+                    connectToDevice(connectedPort, newBaud);
+                  }
+                }}
+                connectedPort={connectedPort}
+              />
+            </div>
+          )}
         </div>
       </main>
     </div>

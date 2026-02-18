@@ -177,7 +177,18 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       media: "https://unpkg.com/blockly@12.3.1/media/",
     });
 
+    // Observe container size changes and tell Blockly to resize
+    const resizeObserver = new ResizeObserver(() => {
+      if (workspaceRef.current) {
+        Blockly.svgResize(workspaceRef.current);
+      }
+    });
+    if (blocklyDiv.current) {
+      resizeObserver.observe(blocklyDiv.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       if (workspaceRef.current) {
         workspaceRef.current.dispose();
       }
@@ -203,9 +214,9 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
     const onWorkspaceChange = () => {
       try {
         const code = arduinoGen.workspaceToCode(workspaceRef.current);
-        onCodeChange(code);
+        onCodeChange(code ?? "");
       } catch (e) {
-        console.error("Code generation error:", e);
+        console.error("[BlocklyEditor] Code generation error:", e);
       }
     };
 

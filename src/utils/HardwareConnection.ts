@@ -180,8 +180,8 @@ export class HardwareConnection extends EventTarget {
   }
 
   /** Connect to a serial port */
-  async connectPort(port: string): Promise<any> {
-    return this.sendRequest("CONNECT", { port });
+  async connectPort(port: string, baudRate: number = 9600): Promise<any> {
+    return this.sendRequest("CONNECT", { port, baudRate });
   }
 
   /** Disconnect from current serial port */
