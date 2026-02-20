@@ -20,6 +20,29 @@ blockly.common.defineBlocksWithJsonArray([
         "colour": "#FFAB19"
     },
     {
+        "type": "servo_read",
+        "message0": "read servo angle on pin %1",
+        "args0": [{
+            "type": "field_number",
+            "name": "PIN",
+            "value": 9
+        }],
+        "output": "Number",
+        "colour": "#FFAB19"
+    },
+    {
+        "type": "servo_detach",
+        "message0": "detach servo on pin %1",
+        "args0": [{
+            "type": "field_number",
+            "name": "PIN",
+            "value": 9
+        }],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#FFAB19"
+    },
+    {
         "type": "set_motor_speed",
         "message0": "set motor EN %1 IN1 %2 IN2 %3 speed %4",
         "args0": [

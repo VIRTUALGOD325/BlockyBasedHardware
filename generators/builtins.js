@@ -160,6 +160,12 @@ arduinoGen.forBlock['controls_whileUntil'] = function (block) {
     return 'while (' + cond + ') {\n' + branch + '}\n';
 };
 
+// forever_loop — infinite loop
+arduinoGen.forBlock['forever_loop'] = function (block) {
+    const branch = arduinoGen.statementToCode(block, 'DO');
+    return 'while (true) {\n' + branch + '}\n';
+};
+
 
 // ─── Variables ──────────────────────────────────────────────────
 

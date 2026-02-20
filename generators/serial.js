@@ -9,14 +9,14 @@ arduinoGen.forBlock['serial_begin'] = function (block) {
 
 // Serial.print(value)
 arduinoGen.forBlock['serial_print'] = function (block) {
-    arduinoGen.setupCode_['serial_begin'] = 'Serial.begin(9600);';
+    arduinoGen.setupCode_['serial_begin'] = arduinoGen.setupCode_['serial_begin'] || 'Serial.begin(9600);';
     const value = arduinoGen.valueToCode(block, 'VALUE', Order.ATOMIC) || '""';
     return 'Serial.print(' + value + ');\n';
 }
 
 // Serial.println(value)
 arduinoGen.forBlock['serial_println'] = function (block) {
-    arduinoGen.setupCode_['serial_begin'] = 'Serial.begin(9600);';
+    arduinoGen.setupCode_['serial_begin'] = arduinoGen.setupCode_['serial_begin'] || 'Serial.begin(9600);';
     const value = arduinoGen.valueToCode(block, 'VALUE', Order.ATOMIC) || '""';
     return 'Serial.println(' + value + ');\n';
 }
