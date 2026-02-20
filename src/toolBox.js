@@ -164,6 +164,21 @@ export default {
         },
 
 
+        // ─── Evive RGB ───
+        {
+            kind: "category",
+            name: "🌈 Evive RGB",
+            colour: "#FFAB19",
+            contents: [
+                { kind: "block", type: "evive_program" },
+                { kind: "block", type: "evive_init_strip" },
+                { kind: "block", type: "evive_set_pixel_colour" },
+                { kind: "block", type: "evive_show_strip" },
+                { kind: "block", type: "evive_strip_effect_rgb" },
+                { kind: "block", type: "evive_strip_effect_pattern" },
+            ]
+        },
+
         // ─── Variables ───
         {
             kind: "category",

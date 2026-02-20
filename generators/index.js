@@ -7,4 +7,5 @@ import './sensors'
 import './actuators'
 import './events'
 import './serial'
+import './evive'
 // All generator functions are now registered on arduinoGenerator

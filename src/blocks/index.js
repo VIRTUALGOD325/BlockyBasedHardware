@@ -7,3 +7,4 @@ import './sensors';
 import './actuators';
 import './events';
 import './serial';
+import './evive';
