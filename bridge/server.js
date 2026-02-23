@@ -87,27 +87,88 @@ wss.on("connection", (ws) => {
 // });
 
 // Start server
-server.listen(config.port, () => {
+server.listen(config.port, async () => {
   console.log(`🚀 Bridge server running on http://localhost:${config.port}`);
   console.log(`🔌 WebSocket server running on ws://localhost:${config.port}`);
   console.log(`📡 Attempting to connect to hardware board...`);
-});
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log("\n🛑 Shutting down gracefully...");
-  boardManager.close();
-  server.close(() => {
-    console.log("✅ Server closed");
-    process.exit(0);
-  });
-});
+  // Eureka Service Registration
+  try {
+    const eurekaModule = await import('eureka-js-client');
+    const Eureka = eurekaModule.Eureka || eurekaModule.default.Eureka;
 
-process.on("SIGTERM", () => {
-  console.log("\n🛑 Shutting down gracefully...");
-  boardManager.close();
-  server.close(() => {
-    console.log("✅ Server closed");
-    process.exit(0);
-  });
+    const client = new Eureka({
+      instance: {
+        app: 'hardware-bridge',
+        hostName: 'hardware-bridge',
+        ipAddr: '127.0.0.1',
+        port: {
+          '$': config.port,
+          '@enabled': true,
+        },
+        vipAddress: 'hardware-bridge',
+        dataCenterInfo: {
+          '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+          name: 'MyOwn',
+        },
+      },
+      eureka: {
+        host: process.env.EUREKA_HOST || 'discovery-server',
+        port: process.env.EUREKA_PORT || 8761,
+        servicePath: '/eureka/apps/',
+        maxRetries: 10,
+        requestRetryDelay: 2000,
+      },
+    });
+
+    client.start(error => {
+      console.log(error || '[Eureka] hardware-bridge successfully registered with Discovery Server!');
+    });
+
+    // Graceful shutdown with Eureka Deregistration
+    process.on("SIGINT", () => {
+      console.log("\n🛑 Shutting down gracefully...");
+      boardManager.close();
+      client.stop(() => {
+        server.close(() => {
+          console.log("✅ Server closed");
+          process.exit(0);
+        });
+      });
+    });
+
+    process.on("SIGTERM", () => {
+      console.log("\n🛑 Shutting down gracefully...");
+      boardManager.close();
+      client.stop(() => {
+        server.close(() => {
+          console.log("✅ Server closed");
+          process.exit(0);
+        });
+      });
+    });
+
+  } catch (e) {
+    console.warn('Eureka Client missing or failed to initialize. Skipping service discovery.');
+    console.warn('Please run: npm install eureka-js-client');
+
+    // Fallback handlers if Eureka isn't installed
+    process.on("SIGINT", () => {
+      console.log("\n🛑 Shutting down gracefully...");
+      boardManager.close();
+      server.close(() => {
+        console.log("✅ Server closed");
+        process.exit(0);
+      });
+    });
+
+    process.on("SIGTERM", () => {
+      console.log("\n🛑 Shutting down gracefully...");
+      boardManager.close();
+      server.close(() => {
+        console.log("✅ Server closed");
+        process.exit(0);
+      });
+    });
+  }
 });
