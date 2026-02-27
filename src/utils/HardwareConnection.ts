@@ -33,7 +33,7 @@ export class HardwareConnection extends EventTarget {
   private reconnectInterval: number;
   private reconnectTimer: NodeJS.Timeout | null;
 
-  constructor(url = "ws://localhost:8989") {
+  constructor(url = "ws://localhost:8991") {
     super();
     this.url = url;
     this.ws = null;

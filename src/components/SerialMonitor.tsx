@@ -93,7 +93,7 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-xl w-80 md:w-96 transition-colors duration-200">
+    <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 shadow-xl transition-colors duration-200">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
         <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold text-sm">
