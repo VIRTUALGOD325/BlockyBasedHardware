@@ -69,7 +69,7 @@ class CompilerManager {
 
     async compile(code) {
         // Temp folder
-        const tmpDir = await fs.mkdir(path.join(os.tmpdir(), "arduino-sketch-"));
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "arduino-sketch-"));
         const sketchPath = path.join(tmpDir, "sketch.ino");
 
         // Code to file
@@ -90,12 +90,18 @@ class CompilerManager {
         console.log("......Upload Success!");
     }
 
-    async compileAndUpload(code, port) {
-        // COmpile
+    async compileOnly(code) {
         const sketchDir = await this.compile(code);
+        try {
+            console.log("Compilation successful!");
+        } finally {
+            await fs.rm(sketchDir, { recursive: true });
+        }
+    }
 
-        // Free the PORT (CRITICAL!!)
-        await boardManager.disconnect();
+    async compileAndUpload(code, port) {
+        // Compile
+        const sketchDir = await this.compile(code);
 
         // Upload
         try {
@@ -103,15 +109,12 @@ class CompilerManager {
         }
         catch (e) {
             console.log("Error: ", e);
+            throw e;
         }
         finally {
             // Clean up temp files (Storage Optimization)
-            // TODO Make Robust Logic and Add Error Handling
             await fs.rm(sketchDir, { recursive: true });
         }
-
-        // Reconnect (Serial Monitor)
-        await boardManager.reconnect(port);
     }
 }
 

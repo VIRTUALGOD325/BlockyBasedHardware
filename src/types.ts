@@ -1,16 +1,15 @@
 export enum ConnectionStatus {
   DISCONNECTED = "DISCONNECTED",
-  CONNECTING = "CONNECTING",
   CONNECTED = "CONNECTED",
   UPLOADING = "UPLOADING",
   ERROR = "ERROR",
 }
 
 export interface DevicePort {
-  id: string; // Keep for compatibility if used elsewhere, but path is the main identifier now
+  id: string;
   path: string;
   manufacturer?: string;
-  name: string; // Optional display name
+  name: string;
   type: "USB" | "BLUETOOTH";
 }
 

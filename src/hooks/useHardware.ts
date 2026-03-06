@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { HardwareConnection } from "../utils/HardwareConnection";
+import { WebSerialConnection } from "../utils/WebSerialConnection";
 import { ConnectionStatus, LogMessage } from "../types";
 import { SerialLine } from "../components/SerialMonitor";
+
+const LINK_URL = "http://localhost:8990";
+const BRIDGE_ENDPOINT = "/api/hardware";
 
 export const useHardware = () => {
   // State
@@ -11,16 +14,17 @@ export const useHardware = () => {
   const [connectedPort, setConnectedPort] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [serialLines, setSerialLines] = useState<SerialLine[]>([]);
+  const [isLinkConnected, setIsLinkConnected] = useState(false);
 
   // Refs
-  const hwConnection = useRef<HardwareConnection | null>(null);
-  const lastCodeRef = useRef<string>(""); // cache last generated code
-  const serialBufferRef = useRef<string>(""); // buffer for partial serial data
-  const flushTimerRef = useRef<NodeJS.Timeout | null>(null); // auto-flush timer
+  const serialConn = useRef<WebSerialConnection | null>(null);
+  const serialBufferRef = useRef<string>("");
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const baudRateRef = useRef<number>(9600);
 
-  // Initialize connection instance once
-  if (!hwConnection.current) {
-    hwConnection.current = new HardwareConnection();
+  // Initialize Web Serial connection once
+  if (!serialConn.current) {
+    serialConn.current = new WebSerialConnection();
   }
 
   // Logging Helper
@@ -39,47 +43,58 @@ export const useHardware = () => {
     [],
   );
 
-  // Event Listeners for the Link WebSocket
+  // ── Check if EduPrime Link is running ──
   useEffect(() => {
-    const connection = hwConnection.current;
-    if (!connection) return;
+    let cancelled = false;
 
-    const onConnected = () => {
+    const checkLink = async () => {
+      try {
+        const res = await fetch(`${LINK_URL}/health`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setIsLinkConnected(data.status === "running");
+        }
+      } catch {
+        if (!cancelled) setIsLinkConnected(false);
+      }
+    };
+
+    checkLink();
+    const interval = setInterval(checkLink, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // ── Event Listeners for Web Serial ──
+  useEffect(() => {
+    const conn = serialConn.current;
+    if (!conn) return;
+
+    const onConnected = (e: Event) => {
+      const customEvent = e as CustomEvent;
       setConnectionStatus(ConnectionStatus.CONNECTED);
-      addLog("Eduprime-Link connected", "success");
+      setConnectedPort(customEvent.detail || "Serial Device");
+      addLog(
+        `Device connected: ${customEvent.detail || "Serial Device"}`,
+        "success",
+      );
     };
 
     const onDisconnected = () => {
       setConnectionStatus(ConnectionStatus.DISCONNECTED);
       setConnectedPort(null);
-      addLog("Eduprime-Link disconnected", "error");
+      addLog("Device disconnected", "info");
     };
 
     const onError = (e: Event) => {
       const customEvent = e as CustomEvent;
-      addLog(`Connection error: ${customEvent.detail || "Unknown"}`, "error");
+      addLog(`Serial error: ${customEvent.detail || "Unknown"}`, "error");
     };
 
-    const onReady = () => {
-      addLog("Eduprime-Link ready", "success");
-      // Re-send the last generated code so the Link editor is always populated
-      if (lastCodeRef.current && hwConnection.current?.connected) {
-        hwConnection.current.sendCode(lastCodeRef.current);
-      }
-    };
-
-    const onPortConnected = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setConnectedPort(customEvent.detail);
-      addLog(`Serial port connected: ${customEvent.detail}`, "success");
-    };
-
-    const onPortDisconnected = () => {
-      setConnectedPort(null);
-      addLog("Serial port disconnected", "info");
-    };
-
-    // Helper to flush whatever is in the serial buffer as a line
     const flushSerialBuffer = () => {
       if (serialBufferRef.current.length > 0) {
         const text = serialBufferRef.current.replace(/\r$/, "");
@@ -100,22 +115,15 @@ export const useHardware = () => {
       }
     };
 
-    const onSerialData = (e: Event) => {
+    const onData = (e: Event) => {
       const customEvent = e as CustomEvent;
       const raw: string = customEvent.detail ?? "";
 
-      // Accumulate data in buffer
       serialBufferRef.current += raw;
-
-      // Split on \n to find complete lines
       const parts = serialBufferRef.current.split("\n");
-
-      // Last element is leftover (partial line or "" if data ended with \n)
       serialBufferRef.current = parts.pop() ?? "";
 
-      // Flush all complete lines immediately
       if (parts.length > 0) {
-        // If a flush timer was pending, clear it since we're flushing now
         if (flushTimerRef.current) {
           clearTimeout(flushTimerRef.current);
           flushTimerRef.current = null;
@@ -131,100 +139,21 @@ export const useHardware = () => {
         ]);
       }
 
-      // If there's leftover data (no trailing \n) and no timer pending,
-      // schedule a flush after 100ms. DON'T cancel existing timers —
-      // this ensures Serial.print() without newline still shows data
-      // even when data arrives continuously.
       if (serialBufferRef.current.length > 0 && !flushTimerRef.current) {
         flushTimerRef.current = setTimeout(flushSerialBuffer, 100);
       }
     };
 
-    const onCompileStatus = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { status, message } = customEvent.detail;
-      if (status === "started") addLog(message || "Compiling...", "info");
-      else if (status === "done") addLog(message || "Compile done", "success");
-      else if (status === "error") addLog(message || "Compile error", "error");
-    };
-
-    const onUploadStatus = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { status, message } = customEvent.detail;
-      if (status === "started") addLog(message || "Uploading...", "info");
-      else if (status === "done") {
-        addLog(message || "Upload successful!", "success");
-        setConnectionStatus(ConnectionStatus.CONNECTED);
-      } else if (status === "error") {
-        addLog(message || "Upload failed", "error");
-        setConnectionStatus(ConnectionStatus.ERROR);
-      }
-    };
-
-    const onLinkError = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      addLog(`Link error: ${customEvent.detail}`, "error");
-    };
-
-    connection.addEventListener("CONNECTED", onConnected as EventListener);
-    connection.addEventListener(
-      "DISCONNECTED",
-      onDisconnected as EventListener,
-    );
-    connection.addEventListener("ERROR", onError as EventListener);
-    connection.addEventListener("READY", onReady as EventListener);
-    connection.addEventListener(
-      "PORT_CONNECTED",
-      onPortConnected as EventListener,
-    );
-    connection.addEventListener(
-      "PORT_DISCONNECTED",
-      onPortDisconnected as EventListener,
-    );
-    connection.addEventListener("SERIAL_DATA", onSerialData as EventListener);
-    connection.addEventListener(
-      "COMPILE_STATUS",
-      onCompileStatus as EventListener,
-    );
-    connection.addEventListener(
-      "UPLOAD_STATUS",
-      onUploadStatus as EventListener,
-    );
-    connection.addEventListener("LINK_ERROR", onLinkError as EventListener);
+    conn.addEventListener("CONNECTED", onConnected as EventListener);
+    conn.addEventListener("DISCONNECTED", onDisconnected as EventListener);
+    conn.addEventListener("ERROR", onError as EventListener);
+    conn.addEventListener("DATA", onData as EventListener);
 
     return () => {
-      connection.removeEventListener("CONNECTED", onConnected as EventListener);
-      connection.removeEventListener(
-        "DISCONNECTED",
-        onDisconnected as EventListener,
-      );
-      connection.removeEventListener("ERROR", onError as EventListener);
-      connection.removeEventListener("READY", onReady as EventListener);
-      connection.removeEventListener(
-        "PORT_CONNECTED",
-        onPortConnected as EventListener,
-      );
-      connection.removeEventListener(
-        "PORT_DISCONNECTED",
-        onPortDisconnected as EventListener,
-      );
-      connection.removeEventListener(
-        "SERIAL_DATA",
-        onSerialData as EventListener,
-      );
-      connection.removeEventListener(
-        "COMPILE_STATUS",
-        onCompileStatus as EventListener,
-      );
-      connection.removeEventListener(
-        "UPLOAD_STATUS",
-        onUploadStatus as EventListener,
-      );
-      connection.removeEventListener(
-        "LINK_ERROR",
-        onLinkError as EventListener,
-      );
-      // Clean up flush timer
+      conn.removeEventListener("CONNECTED", onConnected as EventListener);
+      conn.removeEventListener("DISCONNECTED", onDisconnected as EventListener);
+      conn.removeEventListener("ERROR", onError as EventListener);
+      conn.removeEventListener("DATA", onData as EventListener);
       if (flushTimerRef.current) {
         clearTimeout(flushTimerRef.current);
         flushTimerRef.current = null;
@@ -232,139 +161,60 @@ export const useHardware = () => {
     };
   }, [addLog]);
 
-  // Auto-connect to Link WebSocket on mount
-  useEffect(() => {
-    const connection = hwConnection.current;
-    if (connection && !connection.connected) {
-      connection.connect();
-    }
-
-    return () => {
-      // Don't disconnect on cleanup — let it persist across re-renders
-    };
-  }, []);
-
   // --- Actions ---
 
-  /** Connect to the Eduprime-Link WebSocket */
-  const connectToLink = useCallback(() => {
-    setConnectionStatus(ConnectionStatus.CONNECTING);
-    addLog("Connecting to Eduprime-Link...", "info");
-    try {
-      hwConnection.current?.connect();
-    } catch (e) {
-      addLog(`Failed to connect: ${e}`, "error");
-      setConnectionStatus(ConnectionStatus.DISCONNECTED);
-    }
-  }, [addLog]);
-
-  /** Disconnect from the Link WebSocket */
-  const disconnectFromLink = useCallback(() => {
-    addLog("Disconnecting from Eduprime-Link...", "info");
-    hwConnection.current?.disconnect();
-  }, [addLog]);
-
-  /** Scan for available serial ports via the Link */
-  const scanDevices = useCallback(async () => {
-    if (!hwConnection.current?.connected) {
-      addLog("Not connected to Eduprime-Link. Connect first.", "error");
-      return [];
-    }
-
-    try {
-      addLog("Scanning for devices...", "info");
-      const ports = await hwConnection.current.listPorts();
-      addLog(`Found ${ports.length} port(s)`, "success");
-      return ports;
-    } catch (e: any) {
-      addLog(`Scan failed: ${e.message}`, "error");
-      return [];
-    }
-  }, [addLog]);
-
-  /** Connect to a specific serial port through the Link */
   const connectToDevice = useCallback(
-    async (port: string, baudRate: number = 9600) => {
-      if (!hwConnection.current?.connected) {
-        addLog("Not connected to Eduprime-Link", "error");
+    async (baudRate: number = 9600) => {
+      if (!WebSerialConnection.isSupported()) {
+        addLog("Web Serial API not supported. Use Chrome or Edge.", "error");
         return;
       }
 
-      addLog(`Connecting to ${port} at ${baudRate} baud...`, "info");
+      baudRateRef.current = baudRate;
+      addLog("Opening device picker...", "info");
+
       try {
-        await hwConnection.current.connectPort(port, baudRate);
-        setConnectedPort(port);
+        const success = await serialConn.current!.connect(baudRate);
+        if (!success) {
+          addLog("No device selected", "info");
+        }
       } catch (e: any) {
         addLog(`Connection failed: ${e.message}`, "error");
+        setConnectionStatus(ConnectionStatus.ERROR);
       }
     },
     [addLog],
   );
 
-  /** Disconnect from the current serial port */
   const disconnectDevice = useCallback(async () => {
-    if (!hwConnection.current?.connected) return;
     try {
-      await hwConnection.current.disconnectPort();
-      setConnectedPort(null);
+      await serialConn.current?.disconnect();
     } catch (e: any) {
       addLog(`Disconnect failed: ${e.message}`, "error");
     }
   }, [addLog]);
 
-  /** Compile and upload C++ code to the connected board */
-  const uploadCode = useCallback(
-    async (code: string) => {
-      if (!connectedPort) {
-        addLog("No device connected", "error");
-        return;
-      }
+  const sendSerialData = useCallback(
+    (data: string) => {
+      if (!serialConn.current?.connected) return;
 
-      if (!hwConnection.current?.connected) {
-        addLog("Not connected to Eduprime-Link", "error");
-        return;
-      }
+      serialConn.current.write(data).catch((e) => {
+        addLog(`Send failed: ${e.message}`, "error");
+      });
 
-      setConnectionStatus(ConnectionStatus.UPLOADING);
-      addLog("Starting compile and upload...", "info");
-
-      try {
-        await hwConnection.current.uploadCode(code, connectedPort);
-        addLog("Upload complete!", "success");
-        setConnectionStatus(ConnectionStatus.CONNECTED);
-      } catch (e: any) {
-        addLog(`Upload failed: ${e.message}`, "error");
-        setConnectionStatus(ConnectionStatus.ERROR);
-      }
+      setSerialLines((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          text: data.replace(/[\r\n]+$/, ""),
+          direction: "tx" as const,
+          timestamp: new Date(),
+        },
+      ]);
     },
-    [connectedPort, addLog],
+    [addLog],
   );
 
-  /** Send generated C++ code to the Link for display in its GUI */
-  const sendCodeToLink = useCallback((code: string) => {
-    lastCodeRef.current = code; // always cache, even if not connected yet
-    if (hwConnection.current?.connected) {
-      hwConnection.current.sendCode(code);
-    }
-  }, []);
-
-  /** Send raw serial data to the connected device */
-  const sendSerialData = useCallback((data: string) => {
-    if (!hwConnection.current?.connected) return;
-    hwConnection.current.sendData(data);
-    // Echo TX line into the serial monitor
-    setSerialLines((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(36).substr(2, 9),
-        text: data.replace(/[\r\n]+$/, ""),
-        direction: "tx" as const,
-        timestamp: new Date(),
-      },
-    ]);
-  }, []);
-
-  /** Clear all serial monitor lines */
   const clearSerialLines = useCallback(() => {
     setSerialLines([]);
     serialBufferRef.current = "";
@@ -374,18 +224,110 @@ export const useHardware = () => {
     }
   }, []);
 
+  /**
+   * Execute code:
+   * - If EduPrime Link is running → disconnect serial, compile+upload via Link, reconnect serial
+   * - If no Link → compile-only via Docker bridge
+   */
+  const uploadCode = useCallback(
+    async (code: string) => {
+      if (!connectedPort) {
+        addLog("No device connected", "error");
+        return;
+      }
+
+      setConnectionStatus(ConnectionStatus.UPLOADING);
+
+      if (isLinkConnected) {
+        // ── EduPrime Link: full compile + upload ──
+        addLog("EduPrime Link detected → Compiling & uploading...", "info");
+
+        try {
+          // 1. Release serial port for arduino-cli
+          addLog("Releasing serial port for upload...", "info");
+          await serialConn.current?.disconnect();
+          await new Promise((r) => setTimeout(r, 500));
+
+          // 2. Compile + upload via Link
+          const response = await fetch(`${LINK_URL}/api/upload`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, port: connectedPort }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || `Upload failed (${response.status})`,
+            );
+          }
+
+          const result = await response.json();
+          addLog(result.message || "Upload successful!", "success");
+
+          // 3. Reconnect serial
+          addLog("Reconnecting serial monitor...", "info");
+          await new Promise((r) => setTimeout(r, 1500));
+          await serialConn.current?.connect(baudRateRef.current);
+          setConnectionStatus(ConnectionStatus.CONNECTED);
+        } catch (e: any) {
+          addLog(`Upload failed: ${e.message}`, "error");
+          setConnectionStatus(ConnectionStatus.ERROR);
+
+          // Try reconnecting serial even on error
+          try {
+            await new Promise((r) => setTimeout(r, 1000));
+            await serialConn.current?.connect(baudRateRef.current);
+          } catch {
+            addLog(
+              "Could not reconnect serial. Click Connect Device.",
+              "error",
+            );
+          }
+        }
+      } else {
+        // ── No Link: compile-only via Docker bridge ──
+        addLog("No EduPrime Link → Compile-only mode.", "info");
+
+        try {
+          const response = await fetch(`${BRIDGE_ENDPOINT}/upload`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, port: connectedPort }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || `Compile failed (${response.status})`,
+            );
+          }
+
+          const result = await response.json();
+          addLog(
+            result.message ||
+              "Compiled! Install EduPrime Link to upload to device.",
+            "success",
+          );
+          setConnectionStatus(ConnectionStatus.CONNECTED);
+        } catch (e: any) {
+          addLog(`Compile failed: ${e.message}`, "error");
+          setConnectionStatus(ConnectionStatus.ERROR);
+        }
+      }
+    },
+    [connectedPort, isLinkConnected, addLog],
+  );
+
   return {
     connectionStatus,
     connectedPort,
     logs,
     serialLines,
-    connectToLink,
-    disconnectFromLink,
-    scanDevices,
+    isLinkConnected,
     connectToDevice,
     disconnectDevice,
     uploadCode,
-    sendCodeToLink,
     sendSerialData,
     clearSerialLines,
     addLog,
