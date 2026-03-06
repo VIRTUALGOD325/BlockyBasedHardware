@@ -108,11 +108,9 @@ Blockly.common.defineBlocksWithJsonArray([
         "message0": "analog read pin %1",
         "args0": [
             {
-                "type": "field_number",
+                "type": "field_input",
                 "name": "PIN",
-                "value": 0,
-                "min": 0,
-                "max": 15
+                "text": "A0"
             }
         ],
         "output": "Number",

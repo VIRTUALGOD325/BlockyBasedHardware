@@ -8,13 +8,12 @@ arduinoGen.forBlock['read_ultrasonic'] = function (block) {
 
     arduinoGen.includes_['ultrasonic_func'] = `
         long readUltrasonic(int trigPin, int echoPin) {
-        digitalWrite(trigPin, LOW);   
-        delayMicroseconds(2);
-        digitalWrite(trigPin, HIGH);
+        digitalWrite(trigPin, HIGH);   
         delayMicroseconds(10);
         digitalWrite(trigPin, LOW);
         long duration = pulseIn(echoPin, HIGH);
-        return duration * 0.034 / 2;
+        long distance = 0.017 * duration;
+        return distance;
         }
     `;
 
@@ -45,12 +44,42 @@ arduinoGen.forBlock['read_dht'] = function (block) {
 
 arduinoGen.forBlock['read_ir'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    arduinoGen.includes_['ir_lib'] = '#include <IRremote.h>'
-    arduinoGen.variables_['ir_recv'] = 'IRrecv irrecv(' + pin + ');'
-    arduinoGen.setupCode_['ir_begin'] = 'irrecv.enableIRIn();'
-    return ['irrecv.decodedIRData.decodedRawData', Order.ATOMIC]
+    arduinoGen.includes_['ir_lib'] = '#include <IRremote.h>';
+    arduinoGen.variables_['ir_recv'] = 'IRrecv irrecv(' + pin + ');';
+    arduinoGen.variables_['ir_results'] = 'decode_results results;';
+    arduinoGen.setupCode_['ir_begin'] = 'irrecv.enableIRIn();';
+    return '';
 }
 
+// IR Result Available (boolean check)
+arduinoGen.forBlock['ir_result_available'] = function (_block) {
+    arduinoGen.includes_['ir_lib'] = '#include <IRremote.h>';
+    arduinoGen.variables_['ir_results'] = 'decode_results results;';
+    return ['irrecv.decode(&results)', Order.ATOMIC];
+};
+
+// IR Get Value (Decimal or Hexadecimal)
+arduinoGen.forBlock['ir_get_value'] = function (block) {
+    const format = block.getFieldValue('FORMAT');
+    arduinoGen.includes_['ir_lib'] = '#include <IRremote.h>';
+    arduinoGen.variables_['ir_results'] = 'decode_results results;';
+    if (format === 'HEX') {
+        return ['String(results.value, HEX)', Order.ATOMIC];
+    }
+    return ['results.value', Order.ATOMIC];
+};
+
+// IR Resume
+arduinoGen.forBlock['ir_resume'] = function (_block) {
+    arduinoGen.includes_['ir_lib'] = '#include <IRremote.h>';
+    return 'irrecv.resume();\n';
+};
+
+// IR Key Code
+arduinoGen.forBlock['ir_key_code'] = function (block) {
+    const key = block.getFieldValue('KEY');
+    return [key, Order.ATOMIC];
+};
 
 // Timer
 arduinoGen.forBlock['timer'] = function (_block) {

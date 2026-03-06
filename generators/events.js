@@ -24,5 +24,5 @@ arduinoGen.forBlock['arduino_start'] = function (_block) {
     // by appending detailed in `scrub_`.
     // So if this block produces no code, `scrub_` will still produce the code for the next block.
 
-    return '';
+    return '// Arduino Start\n';
 };

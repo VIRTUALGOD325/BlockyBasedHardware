@@ -27,6 +27,8 @@ export default {
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "set_servo_angle" },
+                { kind: "block", type: "servo_read" },
+                { kind: "block", type: "servo_detach" },
                 { kind: "block", type: "set_motor_speed" },
                 { kind: "block", type: "set_neopixel" },
             ]
@@ -110,6 +112,10 @@ export default {
                 { kind: "block", type: "read_ultrasonic" },
                 { kind: "block", type: "read_dht" },
                 { kind: "block", type: "read_ir" },
+                { kind: "block", type: "ir_result_available" },
+                { kind: "block", type: "ir_get_value" },
+                { kind: "block", type: "ir_resume" },
+                { kind: "block", type: "ir_key_code" },
                 { kind: "block", type: "timer" },
                 { kind: "block", type: "reset_timer" },
             ]
@@ -131,6 +137,7 @@ export default {
             name: "🟠 Control",
             colour: "#FFAB19",
             contents: [
+                { kind: "block", type: "forever_loop" },
                 { kind: "block", type: "controls_repeat_ext" },
                 { kind: "block", type: "controls_whileUntil" },
                 { kind: "block", type: "controls_if" },
@@ -156,6 +163,21 @@ export default {
             ]
         },
 
+
+        // ─── Evive RGB ───
+        {
+            kind: "category",
+            name: "🌈 Evive RGB",
+            colour: "#FFAB19",
+            contents: [
+                { kind: "block", type: "evive_program" },
+                { kind: "block", type: "evive_init_strip" },
+                { kind: "block", type: "evive_set_pixel_colour" },
+                { kind: "block", type: "evive_show_strip" },
+                { kind: "block", type: "evive_strip_effect_rgb" },
+                { kind: "block", type: "evive_strip_effect_pattern" },
+            ]
+        },
 
         // ─── Variables ───
         {

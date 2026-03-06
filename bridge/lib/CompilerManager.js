@@ -41,10 +41,29 @@ class CompilerManager {
             else {
                 console.log("Core already installed.");
             }
+            // Install required libraries
+            await this.ensureLibrariesInstalled();
         }
         catch (err) {
             console.log(err);
             throw new Error("Failed to install core! Check Console for details.");
+        }
+    }
+
+    async ensureLibrariesInstalled() {
+        const libraries = [
+            "IRremote@2.6.0",
+            "Servo",
+            "DHT sensor library",
+            "Adafruit NeoPixel"
+        ];
+        for (const lib of libraries) {
+            try {
+                console.log(`Ensuring library: ${lib}`);
+                await this.runCommand(`${this.cliPath} lib install "${lib}"`);
+            } catch (err) {
+                console.warn(`Warning: Could not install ${lib}: ${err.message}`);
+            }
         }
     }
 

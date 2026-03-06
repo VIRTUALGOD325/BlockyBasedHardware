@@ -9,6 +9,23 @@ arduinoGen.forBlock['set_servo_angle'] = function (block) {
     return 'servo_' + pin + '.write(' + angle + ');\n'
 }
 
+arduinoGen.forBlock['servo_read'] = function (block) {
+    const pin = block.getFieldValue('PIN');
+    arduinoGen.includes_['servo_lib'] = '#include <Servo.h>'
+    arduinoGen.variables_['servo_' + pin] = 'Servo servo_' + pin + ';'
+    arduinoGen.setupCode_['servo_attach_' + pin] = 'servo_' + pin + '.attach(' + pin + ');'
+    return ['servo_' + pin + '.read()', Order.ATOMIC];
+}
+
+arduinoGen.forBlock['servo_detach'] = function (block) {
+    const pin = block.getFieldValue('PIN');
+    arduinoGen.includes_['servo_lib'] = '#include <Servo.h>'
+    arduinoGen.variables_['servo_' + pin] = 'Servo servo_' + pin + ';'
+    // We still attach in setup, assuming the user might want to use it before detaching
+    arduinoGen.setupCode_['servo_attach_' + pin] = 'servo_' + pin + '.attach(' + pin + ');'
+    return 'servo_' + pin + '.detach();\n'
+}
+
 arduinoGen.forBlock['set_motor_speed'] = function (block) {
     const en = block.getFieldValue('EN');
     const in1 = block.getFieldValue('IN1');
