@@ -1,0 +1,96 @@
+{
+  "name": "eduprime-link",
+  "version": "2.0.0",
+  "description": "EduPrime Link — Local bridge for compiling and uploading Arduino code",
+  "author": "EduPrime",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "server-only": "node server.js",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.eduprime.link",
+    "productName": "EduPrime Link",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "websocket.js",
+      "serial.js",
+      "uploader.js",
+      "lib/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "EduPrime Link",
+      "icon": "build/icon.png",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EduPrime Link"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "VIRTUALGOD325",
+      "repo": "Eduprime-Workspace"
+    }
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "electron-updater": "^6.3.0",
+    "express": "^5.1.0",
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

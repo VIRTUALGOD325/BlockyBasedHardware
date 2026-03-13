@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+.env
+.env.local
+out/
+bin/
+arduino-cli
+arduino-cli.exe
+package-lock.json
