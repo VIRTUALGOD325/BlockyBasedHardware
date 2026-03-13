@@ -80,7 +80,8 @@
     "publish": {
       "provider": "github",
       "owner": "VIRTUALGOD325",
-      "repo": "Eduprime-Workspace"
+      "repo": "Eduprime-Workspace",
+      "releaseType": "release"
     }
   },
   "dependencies": {
