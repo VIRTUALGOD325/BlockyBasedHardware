@@ -1,3 +1,4 @@
+
 const { SerialPort } = require('serialport')
 
 let activePort = null

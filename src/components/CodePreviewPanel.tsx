@@ -105,16 +105,25 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
     return html;
   };
 
-  const lines = code.split("\n");
+  const isDefaultEmpty =
+    !code.trim() ||
+    code.trim() === "void setup() {\n}\n\nvoid loop() {\n}" ||
+    code.trim() === "void setup() {\n}\n\nvoid loop() {\n\n}";
+
+  const displayCode = isDefaultEmpty
+    ? "void setup() {\n  // Add blocks to generate code inside each.\n}\n\nvoid loop() {\n  \n}"
+    : code;
+
+  const lines = displayCode.split("\n");
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700 shadow-xl transition-all duration-300">
+    <div className="flex flex-col h-full bg-white dark:bg-[#1e1e1e] transition-all duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-700 bg-gray-800/80 flex-shrink-0">
-        <div className="flex items-center gap-2 text-gray-200 font-semibold text-sm">
-          <Code2 className="w-4 h-4 text-blue-400" />
+      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-[#181a1f] bg-gray-50 dark:bg-[#21252b] flex-shrink-0 transition-colors">
+        <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200 font-semibold text-sm">
+          <Code2 className="w-4 h-4 text-blue-500 dark:text-blue-400" />
           <span>Arduino C++</span>
-          <span className="text-[10px] font-mono bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-mono bg-blue-100 dark:bg-[#16274a] text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
             Auto-updating
           </span>
         </div>
@@ -122,17 +131,17 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
           <button
             onClick={handleCopy}
             title="Copy code"
-            className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-gray-200 transition-colors"
+            className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           >
             {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-400" />
+              <Check className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
             ) : (
               <Copy className="w-3.5 h-3.5" />
             )}
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-gray-200 transition-colors"
+            className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -142,16 +151,16 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
       {/* Code Area */}
       <div
         ref={codeRef}
-        className="flex-1 overflow-auto custom-scrollbar bg-gray-950"
+        className="flex-1 overflow-auto custom-scrollbar bg-transparent"
       >
-        <pre className="p-4 text-sm font-mono leading-relaxed">
+        <pre className="p-5 text-[13px] font-mono leading-relaxed">
           {lines.map((line, i) => (
             <div key={i} className="flex">
               <span className="text-gray-600 select-none w-8 text-right pr-4 flex-shrink-0 text-xs leading-relaxed">
                 {i + 1}
               </span>
               <span
-                className="text-gray-200 flex-1"
+                className="text-gray-800 dark:text-gray-300 flex-1"
                 dangerouslySetInnerHTML={{
                   __html: highlightCode(line),
                 }}
@@ -162,7 +171,7 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-t border-gray-700 bg-gray-800/50 text-[10px] text-gray-500 flex-shrink-0">
+      <div className="flex items-center justify-between px-5 py-2 border-t border-gray-200 dark:border-[#181a1f] bg-gray-50 dark:bg-[#21252b] text-[11px] font-medium text-gray-500 flex-shrink-0 transition-colors">
         <span>{lines.length} lines</span>
         <span>Read-only • Updates on block changes</span>
       </div>

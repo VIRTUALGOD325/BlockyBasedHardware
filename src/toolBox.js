@@ -4,7 +4,7 @@ export default {
         // ─── Pin ───
         {
             kind: "category",
-            name: "🔵 Pin",
+            name: "Pin",
             colour: "#FF6680",
             contents: [
                 { kind: "block", type: "set_pin_mode" },
@@ -23,7 +23,7 @@ export default {
         // ─── Actuators ───
         {
             kind: "category",
-            name: "🟠 Actuators",
+            name: "Actuators",
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "set_servo_angle" },
@@ -37,7 +37,7 @@ export default {
         // ─── Serial Port ───
         {
             kind: "category",
-            name: "🟢 Serial Port",
+            name: "Serial Port",
             colour: "#00979D",
             contents: [
                 { kind: "block", type: "serial_begin" },
@@ -68,7 +68,7 @@ export default {
         // ─── Data ───
         {
             kind: "category",
-            name: "🟣 Data",
+            name: "Data",
             colour: "#8B5CF6",
             contents: [
                 {
@@ -106,7 +106,7 @@ export default {
         // ─── Sensor ───
         {
             kind: "category",
-            name: "🔵 Sensor",
+            name: "Sensor",
             colour: "#4CBFE6",
             contents: [
                 { kind: "block", type: "read_ultrasonic" },
@@ -124,7 +124,7 @@ export default {
         // ─── Events ───
         {
             kind: "category",
-            name: "🟡 Events",
+            name: "Events",
             colour: "#FFBF00",
             contents: [
                 { kind: "block", type: "arduino_start" },
@@ -134,7 +134,7 @@ export default {
         // ─── Control ───
         {
             kind: "category",
-            name: "🟠 Control",
+            name: "Control",
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "forever_loop" },
@@ -149,7 +149,7 @@ export default {
         // ─── Operators ───
         {
             kind: "category",
-            name: "🟢 Operators",
+            name: "Operators",
             colour: "#59C059",
             contents: [
                 { kind: "block", type: "math_arithmetic" },
@@ -167,7 +167,7 @@ export default {
         // ─── Evive RGB ───
         {
             kind: "category",
-            name: "🌈 Evive RGB",
+            name: "Evive RGB",
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "evive_program" },
@@ -182,7 +182,7 @@ export default {
         // ─── Variables ───
         {
             kind: "category",
-            name: "🟠 Variables",
+            name: "Variables",
             colour: "#FF8C1A",
             custom: "VARIABLE"
         },
@@ -190,7 +190,7 @@ export default {
         // ─── My Blocks ───
         {
             kind: "category",
-            name: "🔴 My Blocks",
+            name: "My Blocks",
             colour: "#FF6680",
             custom: "PROCEDURE"
         }

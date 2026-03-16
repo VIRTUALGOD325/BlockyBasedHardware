@@ -134,3 +134,195 @@ body {
   background: var(--accent-primary);
   color: white;
 }
+
+/* ─── Blockly Workspace Overrides (Desktop App Mockup Style) ─── */
+
+.blocklyToolboxDiv {
+  background-color: #2b2b2b !important;
+  color: #fff !important;
+  border-right: 1px solid #1a1a1a !important;
+  padding: 12px 0 0 0 !important;
+  font-family: inherit !important;
+  width: 180px !important; /* Thin sidebar */
+}
+
+/* Hardcode dark mode for toolbox since mockup strictly uses dark sidebar */
+.dark .blocklyToolboxDiv {
+  background-color: #2b2b2b !important;
+  border-right: 1px solid #1a1a1a !important;
+}
+
+/* Add a mock search bar */
+.blocklyToolboxDiv::before {
+  content: "Search...";
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin: 0 12px 16px 12px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: #1a1a1a;
+  color: #888;
+  font-size: 13px;
+  border: 1px solid #333;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 10px) center; /* align icon to right */
+}
+
+.dark .blocklyToolboxDiv::before {
+  background-color: #1e1e1e;
+  color: #888;
+  border: 1px solid #333;
+}
+
+.blocklyTreeRow {
+  height: 36px !important;
+  line-height: 36px !important;
+  margin-bottom: 2px !important;
+  padding-left: 12px !important;
+  transition: background-color 0.15s ease;
+  cursor: pointer !important;
+  border-left: 3px solid transparent;
+}
+
+.blocklyTreeRow:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dark .blocklyTreeRow:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.blocklyTreeSelected {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-left: 3px solid transparent !important;
+}
+.dark .blocklyTreeSelected {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.blocklyTreeLabel {
+  font-family: "Inter", "SF Pro Display", sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #e5e7eb !important;
+}
+.dark .blocklyTreeLabel {
+  color: #e5e7eb !important;
+}
+
+.blocklyTreeSelected .blocklyTreeLabel {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.dark .blocklyTreeSelected .blocklyTreeLabel {
+  color: #ffffff !important;
+}
+
+/* Category Icons as Rounded Squares with inner SVGs */
+.blocklyTreeIcon {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+  margin-right: 10px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  background-size: 10px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Define colors based on aria-label */
+.blocklyTreeRow[aria-label="Pin"] .blocklyTreeIcon {
+  background-color: #3b82f6 !important; /* Blue */
+}
+.blocklyTreeRow[aria-label="Actuators"] .blocklyTreeIcon {
+  background-color: #f59e0b !important; /* Orange/Yellow */
+}
+.blocklyTreeRow[aria-label="Serial Port"] .blocklyTreeIcon {
+  background-color: #10b981 !important; /* Green */
+}
+.blocklyTreeRow[aria-label="Data"] .blocklyTreeIcon {
+  background-color: #a855f7 !important; /* Purple */
+}
+.blocklyTreeRow[aria-label="Sensor"] .blocklyTreeIcon {
+  background-color: #06b6d4 !important; /* Cyan */
+}
+.blocklyTreeRow[aria-label="Events"] .blocklyTreeIcon {
+  background-color: #eab308 !important; /* Yellow */
+}
+.blocklyTreeRow[aria-label="Control"] .blocklyTreeIcon {
+  background-color: #f97316 !important; /* Orange */
+}
+.blocklyTreeRow[aria-label="Operators"] .blocklyTreeIcon {
+  background-color: #22c55e !important; /* Lime green */
+}
+.blocklyTreeRow[aria-label="Evive RGB"] .blocklyTreeIcon {
+  background-color: #ef4444 !important; /* Red */
+}
+.blocklyTreeRow[aria-label="Variables"] .blocklyTreeIcon {
+  background-color: #d946ef !important; /* Pink/Purple */
+}
+.blocklyTreeRow[aria-label="My Blocks"] .blocklyTreeIcon {
+  background-color: #ef4444 !important; /* Red */
+}
+
+/* Workspace styling */
+.blocklySvg {
+  background-color: #1e1e1e !important; /* Match mockup dark IDE background */
+}
+
+.blocklyWidgetDiv .goog-menu {
+  background: #2b2d31 !important;
+  border: 1px solid #1e1f22 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px 0 !important;
+}
+
+.blocklyWidgetDiv .goog-menuitem {
+  padding: 6px 16px !important;
+  color: #dbdee1 !important;
+  font-family: var(--font-ui) !important;
+  font-size: 13px !important;
+}
+
+.blocklyWidgetDiv .goog-menuitem-highlight,
+.blocklyWidgetDiv .goog-menuitem:hover {
+  background-color: #3a76c4 !important;
+  color: #ffffff !important;
+}
+
+/* Scrollbar specifically within Blockly toolbox if needed */
+.blocklyToolboxDiv::-webkit-scrollbar {
+  width: 6px;
+}
+.blocklyToolboxDiv::-webkit-scrollbar-track {
+  background: transparent;
+}
+.blocklyToolboxDiv::-webkit-scrollbar-thumb {
+  background: #1e1f22;
+  border-radius: 4px;
+}
+.blocklyToolboxDiv::-webkit-scrollbar-thumb:hover {
+  background: #3f4147;
+}
+
+/* Custom styles for Blockly Zoom and Trash Controls */
+.blocklyZoom,
+.blocklyTrash {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.blocklyZoom:hover,
+.blocklyTrash:hover {
+  opacity: 1;
+}
+
+/* Make trashcan visible on dark backgrounds */
+.dark .blocklyTrash image {
+  filter: brightness(2.5);
+}

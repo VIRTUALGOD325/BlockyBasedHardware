@@ -135,10 +135,10 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         logic_category: { colour: "#59C059" },
       },
       componentStyles: {
-        workspaceBackgroundColour: "#1A1A1A",
-        toolboxBackgroundColour: "#2D2D2D",
+        workspaceBackgroundColour: "#141620",
+        toolboxBackgroundColour: "#11131c",
         toolboxForegroundColour: "#FFFFFF",
-        flyoutBackgroundColour: "#252525",
+        flyoutBackgroundColour: "#1a1d27",
         flyoutOpacity: 1,
         scrollbarColour: "#555555",
         insertionMarkerColour: "#FFFFFF",
@@ -160,9 +160,9 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       theme: themeMode === "dark" ? scratchDarkTheme : scratchTheme,
       renderer: "zelos",
       grid: {
-        spacing: 20,
-        length: 3,
-        colour: themeMode === "dark" ? "#444444" : "#E5E5E5",
+        spacing: 24,
+        length: 2.5,
+        colour: themeMode === "dark" ? "#ffffff15" : "#00000015",
         snap: true,
       },
       zoom: {

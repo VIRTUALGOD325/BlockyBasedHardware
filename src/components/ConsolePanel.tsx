@@ -24,21 +24,8 @@ export const ConsolePanel: React.FC<ConsolePanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col w-full h-full bg-white dark:bg-gray-800 shadow-xl transition-colors duration-200">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold">
-          <Terminal className="w-4 h-4" />
-          <span>Device Console</span>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar font-mono text-sm">
+    <div className="flex flex-col w-full h-full bg-white dark:bg-[#1e1e1e] transition-colors duration-200">
+      <div className="flex-1 overflow-y-auto p-5 space-y-3.5 custom-scrollbar font-mono text-[13px] bg-transparent">
         {logs.length === 0 && (
           <div className="text-center text-gray-400 dark:text-gray-500 mt-10 italic">
             No active logs. Connect a device to start.
