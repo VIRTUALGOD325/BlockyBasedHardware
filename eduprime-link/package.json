@@ -70,12 +70,13 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "EduPrime Link"
+      "shortcutName": "EduPrime Link",
+      "runAfterFinish": true
     },
     "publish": {
       "provider": "github",
