@@ -49,14 +49,22 @@ async function uploadFromCPP(code, port, onStatus) {
     }
   }
 
-  // Small delay for OS to release port
-  await delay(500)
+  // On macOS, use /dev/cu.* instead of /dev/tty.* — the tty variant
+  // causes tcsetattr() failures with CH340/CH341 USB-serial adapters
+  let uploadPort = port
+  if (process.platform === 'darwin' && port.includes('/dev/tty.')) {
+    uploadPort = port.replace('/dev/tty.', '/dev/cu.')
+    console.log(`[uploader] macOS: using ${uploadPort} instead of ${port}`)
+  }
+
+  // Delay for OS to fully release the serial port
+  await delay(1500)
 
   // --- Phase 2: Upload ---
-  onStatus?.({ phase: 'upload', status: 'started', message: `Uploading to ${port}...` })
+  onStatus?.({ phase: 'upload', status: 'started', message: `Uploading to ${uploadPort}...` })
 
   const uploadResult = await runCommand(
-    `arduino-cli upload -p ${port} --fqbn arduino:avr:uno "${tempDir}"`,
+    `arduino-cli upload -p ${uploadPort} --fqbn arduino:avr:uno "${tempDir}"`,
     120000
   )
 

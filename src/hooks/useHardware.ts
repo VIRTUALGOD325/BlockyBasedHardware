@@ -7,8 +7,10 @@ import {
 import { ConnectionStatus, LogMessage } from "../types";
 import { SerialLine } from "../components/SerialMonitor";
 
-const LINK_URL = "http://localhost:8990";
-const LINK_WS_URL = "ws://localhost:8991";
+// Use the same hostname the page is loaded from, but always target Link's fixed ports
+const LINK_HOST = window.location.hostname || "127.0.0.1";
+const LINK_URL = `http://${LINK_HOST}:8990`;
+const LINK_WS_URL = `ws://${LINK_HOST}:8991`;
 
 export type SerialMode = "link" | "webserial";
 
@@ -402,16 +404,15 @@ export const useHardware = () => {
         if (!linkConn.current?.connected) {
           addLog("Connecting to EduPrime Link...", "info");
           linkConn.current?.retryConnect();
-          // Wait briefly for WebSocket to establish
-          await new Promise((r) => setTimeout(r, 1500));
-          if (!linkConn.current?.connected) {
+          const connected = await linkConn.current!.waitForConnection(5000);
+          if (!connected) {
             addLog("Could not establish connection to EduPrime Link. Try again.", "error");
             return;
           }
         }
         addLog(`Connecting to ${portPath} via Link...`, "info");
         try {
-          await linkConn.current.connectPort(portPath, baudRateRef.current);
+          await linkConn.current!.connectPort(portPath, baudRateRef.current);
         } catch (e: any) {
           addLog(`Connection failed: ${e.message}`, "error");
           setConnectionStatus(ConnectionStatus.ERROR);

@@ -1,6 +1,16 @@
 const WebSocket = require('ws')
-const serial = require('./serial')
-const uploader = require('./uploader')
+
+// Lazy-load serial and uploader so a native-module failure
+// doesn't prevent the WebSocket server from starting.
+let serial, uploader
+try {
+  serial = require('./serial')
+  uploader = require('./uploader')
+} catch (err) {
+  console.error('[WS] Failed to load serial/uploader modules:', err.message)
+  serial = null
+  uploader = null
+}
 
 /**
  * Broadcasts a message to all connected WebSocket clients.
@@ -13,16 +23,26 @@ function broadcast(data) {
   });
 }
 
-const wss = new WebSocket.Server({ port: 8991, host: '127.0.0.1' })
+const wss = new WebSocket.Server({ port: 8991, host: '0.0.0.0' })
+
+wss.on('listening', () => {
+  console.log('[WS] WebSocket server listening on port 8991')
+})
+
+wss.on('error', (err) => {
+  console.error('[WS] WebSocket server error:', err.message)
+})
 
 // Register serial port lifecycle events once — broadcast to all clients
-serial.setEventCallback((event, message) => {
-  if (event === 'error') {
-    broadcast({ type: 'ERROR', message: `Serial port error: ${message}` })
-  } else if (event === 'close') {
-    broadcast({ type: 'DISCONNECTED', message: 'Serial port closed unexpectedly' })
-  }
-})
+if (serial) {
+  serial.setEventCallback((event, message) => {
+    if (event === 'error') {
+      broadcast({ type: 'ERROR', message: `Serial port error: ${message}` })
+    } else if (event === 'close') {
+      broadcast({ type: 'DISCONNECTED', message: 'Serial port closed unexpectedly' })
+    }
+  })
+}
 
 // Heartbeat: detect dead clients
 const HEARTBEAT_INTERVAL = 15000
@@ -45,11 +65,11 @@ wss.on('connection', ws => {
   ws.on('pong', () => { ws.isAlive = true })
 
   // Register a single data callback for this WebSocket client.
-  // serial.connect() auto-attaches this to every new port instance,
-  // so it works even after upload-triggered reconnections.
-  serial.setDataCallback((data) => {
-    broadcast({ type: 'SERIAL_DATA', data })
-  })
+  if (serial) {
+    serial.setDataCallback((data) => {
+      broadcast({ type: 'SERIAL_DATA', data })
+    })
+  }
 
   ws.on('message', async message => {
     let msg
@@ -61,6 +81,12 @@ wss.on('connection', ws => {
     }
 
     const { type, requestId } = msg
+
+    // If serial modules failed to load, reject hardware commands gracefully
+    if (!serial && ['LIST_PORTS', 'CONNECT', 'DISCONNECT', 'SEND_DATA', 'UPLOAD_CODE'].includes(type)) {
+      safeSend(ws, { type: 'ERROR', message: 'Serial module not available. Restart EduPrime Link.', requestId })
+      return
+    }
 
     switch (type) {
 
@@ -103,6 +129,10 @@ wss.on('connection', ws => {
         const { code, port } = msg
         if (!code || !port) {
           safeSend(ws, { type: 'ERROR', message: 'Missing code or port', requestId })
+          break
+        }
+        if (!uploader) {
+          safeSend(ws, { type: 'ERROR', message: 'Uploader module not available.', requestId })
           break
         }
 
@@ -173,5 +203,3 @@ function safeSend(ws, data) {
     ws.send(JSON.stringify(data))
   }
 }
-
-console.log('EduPrime Link WebSocket running on ws://localhost:8991')

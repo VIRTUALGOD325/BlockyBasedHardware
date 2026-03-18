@@ -108,7 +108,7 @@ app.post('/api/upload', async (req, res) => {
 // ── Start Server with auto-setup ──
 async function startServer() {
     return new Promise((resolve, reject) => {
-        const server = app.listen(PORT, async () => {
+        const server = app.listen(PORT, '0.0.0.0', async () => {
             console.log(`🚀 EduPrime Link running on http://localhost:${PORT}`);
 
             // Start WebSocket server for serial communication

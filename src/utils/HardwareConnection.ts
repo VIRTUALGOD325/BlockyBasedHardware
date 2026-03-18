@@ -280,7 +280,29 @@ export class HardwareConnection extends EventTarget {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    // Close any stale socket before retrying
+    if (this.ws) {
+      try { this.ws.close(); } catch { /* ignore */ }
+      this.ws = null;
+    }
     this.connect();
+  }
+
+  /** Wait for the WebSocket to be connected, with a timeout */
+  waitForConnection(timeoutMs = 5000): Promise<boolean> {
+    if (this.connected) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => {
+      const timeout = setTimeout(() => { cleanup(); resolve(false); }, timeoutMs);
+      const onConnect = () => { cleanup(); resolve(true); };
+      const onError = () => { cleanup(); resolve(false); };
+      const cleanup = () => {
+        clearTimeout(timeout);
+        this.removeEventListener("CONNECTED", onConnect);
+        this.removeEventListener("ERROR", onError);
+      };
+      this.addEventListener("CONNECTED", onConnect, { once: true });
+      this.addEventListener("ERROR", onError, { once: true });
+    });
   }
 
   disconnect() {
