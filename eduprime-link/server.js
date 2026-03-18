@@ -20,7 +20,7 @@ app.use(express.static(__dirname)); // Serve the dashboard UI
 // ── Health Check (uses cached status, no shell exec per request) ──
 app.get('/health', (req, res) => {
     res.json({
-        status: setupStatus === 'ready' ? 'running' : 'setup',
+        status: 'running',
         setupStatus,
         setupMessage,
         name: 'EduPrime Link',

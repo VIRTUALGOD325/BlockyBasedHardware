@@ -390,13 +390,24 @@ export const useHardware = () => {
         // Link mode — connect via WebSocket
         const portPath =
           typeof baudRateOrPort === "string" ? baudRateOrPort : undefined;
-        if (!isLinkConnected || !linkConn.current?.connected) {
-          addLog("EduPrime Link is not running. Start Link first.", "error");
-          return;
-        }
         if (!portPath) {
           addLog("Select a port from the dropdown.", "error");
           return;
+        }
+        if (!isLinkConnected) {
+          addLog("EduPrime Link is not running. Start Link first.", "error");
+          return;
+        }
+        // If health check passed but WebSocket isn't connected yet, try to connect it
+        if (!linkConn.current?.connected) {
+          addLog("Connecting to EduPrime Link...", "info");
+          linkConn.current?.retryConnect();
+          // Wait briefly for WebSocket to establish
+          await new Promise((r) => setTimeout(r, 1500));
+          if (!linkConn.current?.connected) {
+            addLog("Could not establish connection to EduPrime Link. Try again.", "error");
+            return;
+          }
         }
         addLog(`Connecting to ${portPath} via Link...`, "info");
         try {
