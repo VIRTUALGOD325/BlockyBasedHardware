@@ -11,81 +11,104 @@ const serial = require('./serial')
  * @param {function} onStatus - Callback for progress: ({ phase, status, message? })
  * @returns {Promise<void>}
  */
-function uploadFromCPP(code, port, onStatus) {
-  return new Promise((resolve, reject) => {
-    const tempDir = path.join(os.tmpdir(), 'eduprime_sketch')
-    const sketchPath = path.join(tempDir, 'eduprime_sketch.ino')
+async function uploadFromCPP(code, port, onStatus) {
+  const tempDir = path.join(os.tmpdir(), 'eduprime_sketch')
+  const sketchPath = path.join(tempDir, 'eduprime_sketch.ino')
 
-    // Ensure temp directory exists
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true })
+  // Ensure temp directory exists
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true })
+  }
+
+  // Write code to sketch file
+  fs.writeFileSync(sketchPath, code)
+
+  // --- Phase 1: Compile ---
+  onStatus?.({ phase: 'compile', status: 'started', message: 'Compiling sketch...' })
+
+  const compileResult = await runCommand(
+    `arduino-cli compile --fqbn arduino:avr:uno "${tempDir}"`,
+    120000
+  )
+
+  if (compileResult.error) {
+    const errMsg = compileResult.stderr || compileResult.error.message
+    onStatus?.({ phase: 'compile', status: 'error', message: errMsg })
+    throw new Error(errMsg)
+  }
+
+  onStatus?.({ phase: 'compile', status: 'done', message: compileResult.stdout.trim() })
+
+  // Disconnect serial port before uploading (port contention fix)
+  const wasConnected = serial.isConnected()
+  if (wasConnected) {
+    try {
+      await serial.disconnect()
+    } catch (e) {
+      console.warn('[uploader] Disconnect warning:', e.message)
+    }
+  }
+
+  // Small delay for OS to release port
+  await delay(500)
+
+  // --- Phase 2: Upload ---
+  onStatus?.({ phase: 'upload', status: 'started', message: `Uploading to ${port}...` })
+
+  const uploadResult = await runCommand(
+    `arduino-cli upload -p ${port} --fqbn arduino:avr:uno "${tempDir}"`,
+    120000
+  )
+
+  if (uploadResult.error) {
+    const errMsg = uploadResult.stderr || uploadResult.error.message
+    onStatus?.({ phase: 'upload', status: 'error', message: errMsg })
+
+    // Reconnect serial if it was connected before
+    if (wasConnected) {
+      await reconnectSerial(port, 1000)
     }
 
-    // Write code to sketch file
-    fs.writeFileSync(sketchPath, code)
+    throw new Error(errMsg)
+  }
 
-    // --- Phase 1: Compile ---
-    onStatus?.({ phase: 'compile', status: 'started', message: 'Compiling sketch...' })
+  onStatus?.({ phase: 'upload', status: 'done', message: 'Upload successful!' })
 
-    const compileCmd = `arduino-cli compile --fqbn arduino:avr:uno "${tempDir}"`
+  // Reconnect serial after successful upload
+  if (wasConnected) {
+    await reconnectSerial(port, 1500)
+  }
+}
 
-    exec(compileCmd, (compileErr, compileStdout, compileStderr) => {
-      if (compileErr) {
-        const errMsg = compileStderr || compileErr.message
-        onStatus?.({ phase: 'compile', status: 'error', message: errMsg })
-        reject(new Error(errMsg))
-        return
+/**
+ * Attempt to reconnect serial with retries.
+ */
+async function reconnectSerial(port, initialDelay, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await delay(attempt === 1 ? initialDelay : 1000)
+    try {
+      await serial.connect(port)
+      console.log(`[uploader] Serial reconnected (attempt ${attempt})`)
+      return
+    } catch (e) {
+      console.warn(`[uploader] Reconnect attempt ${attempt}/${maxRetries} failed: ${e.message}`)
+      if (attempt === maxRetries) {
+        console.error('[uploader] Could not reconnect serial after upload')
       }
+    }
+  }
+}
 
-      onStatus?.({ phase: 'compile', status: 'done', message: compileStdout.trim() })
-
-      // Disconnect serial port before uploading (port contention fix)
-      const wasConnected = serial.isConnected()
-      if (wasConnected) {
-        serial.disconnect()
-      }
-
-      // Small delay for OS to release port
-      setTimeout(() => {
-        // --- Phase 2: Upload ---
-        onStatus?.({ phase: 'upload', status: 'started', message: `Uploading to ${port}...` })
-
-        const uploadCmd = `arduino-cli upload -p ${port} --fqbn arduino:avr:uno "${tempDir}"`
-
-        exec(uploadCmd, (uploadErr, uploadStdout, uploadStderr) => {
-          if (uploadErr) {
-            const errMsg = uploadStderr || uploadErr.message
-            onStatus?.({ phase: 'upload', status: 'error', message: errMsg })
-
-            // Reconnect serial if it was connected before
-            if (wasConnected) {
-              setTimeout(() => serial.connect(port), 1000)
-            }
-
-            reject(new Error(errMsg))
-            return
-          }
-
-          onStatus?.({ phase: 'upload', status: 'done', message: 'Upload successful!' })
-
-          // Reconnect serial after successful upload
-          if (wasConnected) {
-            console.log('[uploader] Reconnecting serial...');
-            setTimeout(() => {
-              try {
-                serial.connect(port);
-                console.log('[uploader] Serial reconnected');
-              } catch (e) {
-                console.error('[uploader] Failed to reconnect serial:', e.message);
-              }
-            }, 1500)
-          }
-
-          resolve()
-        })
-      }, 500)
+function runCommand(cmd, timeout = 120000) {
+  return new Promise((resolve) => {
+    const proc = exec(cmd, { timeout }, (error, stdout, stderr) => {
+      resolve({ error, stdout: stdout || '', stderr: stderr || '' })
     })
   })
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 module.exports = { uploadFromCPP }

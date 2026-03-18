@@ -18,6 +18,7 @@ export class WebSerialConnection extends EventTarget {
   private _connected = false;
   private decoder = new TextDecoder();
   private encoder = new TextEncoder();
+  private disconnectHandler: ((event: Event) => void) | null = null;
 
   get connected(): boolean {
     return this._connected;
@@ -61,6 +62,11 @@ export class WebSerialConnection extends EventTarget {
    * If no port is selected, opens the picker first.
    */
   async connect(baudRate: number = 9600): Promise<boolean> {
+    // If already connected, disconnect first
+    if (this._connected) {
+      await this.disconnect();
+    }
+
     try {
       if (!this.port) {
         const selectedPort = await this.requestPort();
@@ -70,6 +76,9 @@ export class WebSerialConnection extends EventTarget {
       await this.port!.open({ baudRate });
 
       this._connected = true;
+
+      // Listen for USB disconnect
+      this.setupDisconnectHandler();
 
       // Set up writer
       if (this.port!.writable) {
@@ -90,6 +99,16 @@ export class WebSerialConnection extends EventTarget {
       return true;
     } catch (e: any) {
       this._connected = false;
+      // Handle specific error cases
+      if (e.message?.includes("already open")) {
+        // Port was left open from a previous session — close and retry
+        try {
+          await this.port?.close();
+          return this.connect(baudRate);
+        } catch {
+          // Fall through to error
+        }
+      }
       this.dispatchEvent(new CustomEvent("ERROR", { detail: e.message }));
       return false;
     }
@@ -101,6 +120,9 @@ export class WebSerialConnection extends EventTarget {
   async disconnect(): Promise<void> {
     this.readLoopActive = false;
 
+    // Remove USB disconnect listener
+    this.removeDisconnectHandler();
+
     try {
       if (this.reader) {
         await this.reader.cancel();
@@ -109,15 +131,18 @@ export class WebSerialConnection extends EventTarget {
       }
     } catch {
       // Ignore reader cancel errors
+      this.reader = null;
     }
 
     try {
       if (this.writer) {
+        await this.writer.close();
         this.writer.releaseLock();
         this.writer = null;
       }
     } catch {
       // Ignore writer release errors
+      this.writer = null;
     }
 
     try {
@@ -141,8 +166,58 @@ export class WebSerialConnection extends EventTarget {
       throw new Error("Not connected");
     }
 
-    const encoded = this.encoder.encode(data);
-    await this.writer.write(encoded);
+    try {
+      const encoded = this.encoder.encode(data);
+      await this.writer.write(encoded);
+    } catch (e: any) {
+      // If write fails, the port is likely gone
+      if (this._connected) {
+        this.dispatchEvent(
+          new CustomEvent("ERROR", {
+            detail: `Write failed: ${e.message}`,
+          }),
+        );
+        await this.disconnect();
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Set up a handler that detects when the USB device is physically unplugged.
+   */
+  private setupDisconnectHandler() {
+    if (!WebSerialConnection.isSupported()) return;
+
+    this.disconnectHandler = (event: Event) => {
+      const disconnectedPort = (event as any).target;
+      if (disconnectedPort === this.port) {
+        console.log("[WebSerial] USB device disconnected");
+        this._connected = false;
+        this.readLoopActive = false;
+        this.reader = null;
+        this.writer = null;
+        this.port = null;
+        this.dispatchEvent(
+          new CustomEvent("ERROR", {
+            detail: "USB device was disconnected",
+          }),
+        );
+        this.dispatchEvent(new CustomEvent("DISCONNECTED"));
+      }
+    };
+
+    navigator.serial.addEventListener("disconnect", this.disconnectHandler);
+  }
+
+  private removeDisconnectHandler() {
+    if (this.disconnectHandler && WebSerialConnection.isSupported()) {
+      navigator.serial.removeEventListener(
+        "disconnect",
+        this.disconnectHandler,
+      );
+      this.disconnectHandler = null;
+    }
   }
 
   /**
@@ -171,6 +246,7 @@ export class WebSerialConnection extends EventTarget {
         this.reader = null;
       } catch (e: any) {
         // ReadableStream error — port was likely disconnected
+        this.reader = null;
         if (this.readLoopActive) {
           this.dispatchEvent(new CustomEvent("ERROR", { detail: e.message }));
           await this.disconnect();

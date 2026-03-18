@@ -44,6 +44,7 @@ export const useHardware = () => {
   const serialBufferRef = useRef<string>("");
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
   const baudRateRef = useRef<number>(9600);
+  const prevLinkConnected = useRef<boolean>(false);
 
   // Initialize connections once
   if (!serialConn.current) {
@@ -132,11 +133,37 @@ export const useHardware = () => {
         if (!cancelled && res.ok) {
           const data = await res.json();
           const running = data.status === "running";
-          setIsLinkConnected(running);
+          setIsLinkConnected((prev) => {
+            if (prev && !running) {
+              // Link just went down — reset serial state if in link mode
+              handleLinkLost();
+            }
+            return running;
+          });
         }
       } catch {
-        if (!cancelled) setIsLinkConnected(false);
+        if (!cancelled) {
+          setIsLinkConnected((prev) => {
+            if (prev) handleLinkLost();
+            return false;
+          });
+        }
       }
+    };
+
+    const handleLinkLost = () => {
+      // Only affect state if we're in link mode
+      setSerialModeRaw((currentMode) => {
+        if (currentMode === "link") {
+          setConnectionStatus(ConnectionStatus.DISCONNECTED);
+          setConnectedPort(null);
+          addLog(
+            "EduPrime Link disconnected. Device connection lost.",
+            "error",
+          );
+        }
+        return currentMode;
+      });
     };
 
     checkLink();
@@ -145,20 +172,17 @@ export const useHardware = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [addLog]);
 
   // ── Connect Link WebSocket when Link is detected ──
   useEffect(() => {
     const conn = linkConn.current;
     if (!conn) return;
 
-    if (isLinkConnected) {
-      conn.connect();
+    if (isLinkConnected && !prevLinkConnected.current) {
+      conn.retryConnect();
     }
-
-    return () => {
-      // Don't disconnect on cleanup — let auto-reconnect handle it
-    };
+    prevLinkConnected.current = isLinkConnected;
   }, [isLinkConnected]);
 
   // ── Event listeners for Link WebSocket ──
@@ -185,17 +209,41 @@ export const useHardware = () => {
       }
     };
 
-    const onPortDisconnected = () => {
+    const onPortDisconnected = (e: Event) => {
       if (serialMode === "link") {
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
+        const customEvent = e as CustomEvent;
+        const detail = customEvent.detail || "";
+        // Only update state if we weren't already disconnected (avoid duplicate events)
+        setConnectionStatus((prev) => {
+          if (prev === ConnectionStatus.UPLOADING) return prev; // Don't interrupt uploads
+          return ConnectionStatus.DISCONNECTED;
+        });
         setConnectedPort(null);
-        addLog("Device disconnected (Link)", "info");
+        const reason = detail ? ` (${detail})` : "";
+        addLog(`Device disconnected${reason}`, "info");
       }
     };
 
     const onLinkError = (e: Event) => {
       const customEvent = e as CustomEvent;
       addLog(`Link error: ${customEvent.detail || "Unknown"}`, "error");
+    };
+
+    const onWsDisconnected = () => {
+      // WebSocket to Link itself dropped
+      if (serialMode === "link") {
+        setConnectionStatus((prev) => {
+          if (
+            prev === ConnectionStatus.CONNECTED ||
+            prev === ConnectionStatus.ERROR
+          ) {
+            addLog("Lost connection to EduPrime Link", "error");
+            setConnectedPort(null);
+            return ConnectionStatus.DISCONNECTED;
+          }
+          return prev;
+        });
+      }
     };
 
     conn.addEventListener("SERIAL_DATA", onSerialData as EventListener);
@@ -205,6 +253,7 @@ export const useHardware = () => {
       onPortDisconnected as EventListener,
     );
     conn.addEventListener("LINK_ERROR", onLinkError as EventListener);
+    conn.addEventListener("DISCONNECTED", onWsDisconnected as EventListener);
 
     return () => {
       conn.removeEventListener("SERIAL_DATA", onSerialData as EventListener);
@@ -217,6 +266,10 @@ export const useHardware = () => {
         onPortDisconnected as EventListener,
       );
       conn.removeEventListener("LINK_ERROR", onLinkError as EventListener);
+      conn.removeEventListener(
+        "DISCONNECTED",
+        onWsDisconnected as EventListener,
+      );
     };
   }, [serialMode, addLog, processSerialData]);
 
@@ -239,7 +292,10 @@ export const useHardware = () => {
 
     const onDisconnected = () => {
       if (serialMode === "webserial") {
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
+        setConnectionStatus((prev) => {
+          if (prev === ConnectionStatus.UPLOADING) return prev;
+          return ConnectionStatus.DISCONNECTED;
+        });
         setConnectedPort(null);
         addLog("Device disconnected", "info");
       }
@@ -323,6 +379,13 @@ export const useHardware = () => {
         baudRate ??
         (typeof baudRateOrPort === "number" ? baudRateOrPort : 9600);
 
+      // Clear ERROR state before attempting connection
+      setConnectionStatus((prev) =>
+        prev === ConnectionStatus.ERROR
+          ? ConnectionStatus.DISCONNECTED
+          : prev,
+      );
+
       if (serialMode === "link") {
         // Link mode — connect via WebSocket
         const portPath =
@@ -375,6 +438,9 @@ export const useHardware = () => {
     } catch (e: any) {
       addLog(`Disconnect failed: ${e.message}`, "error");
     }
+    // Always reset state even if disconnect call fails
+    setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    setConnectedPort(null);
   }, [serialMode, addLog]);
 
   const sendSerialData = useCallback(
@@ -411,18 +477,58 @@ export const useHardware = () => {
     }
   }, []);
 
-  /**
-   * Upload code:
-   * - If Link is running → compile+upload via Link HTTP API
-   * - If no Link → compile-only via Docker bridge
-   */
-  const uploadCode = useCallback(
+  // Helper: reconnect serial after upload with retries
+  const reconnectAfterUpload = useCallback(
+    async (port: string, isErrorRecovery = false) => {
+      const maxRetries = 3;
+      const baseDelay = isErrorRecovery ? 1000 : 1500;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        addLog(
+          `Reconnecting serial monitor${attempt > 1 ? ` (attempt ${attempt}/${maxRetries})` : ""}...`,
+          "info",
+        );
+        await new Promise((r) => setTimeout(r, baseDelay * attempt));
+
+        try {
+          if (serialMode === "link") {
+            if (!linkConn.current?.connected) {
+              // Link WS dropped during upload — wait for reconnect
+              addLog("Waiting for Link reconnection...", "info");
+              await new Promise((r) => setTimeout(r, 2000));
+              if (!linkConn.current?.connected) {
+                throw new Error("Link not available");
+              }
+            }
+            await linkConn.current.connectPort(port, baudRateRef.current);
+          } else {
+            await serialConn.current?.connect(baudRateRef.current);
+          }
+          setConnectionStatus(ConnectionStatus.CONNECTED);
+          return;
+        } catch (e: any) {
+          if (attempt === maxRetries) {
+            addLog(
+              "Could not reconnect serial. Click Connect Device to retry.",
+              "error",
+            );
+            setConnectionStatus(ConnectionStatus.DISCONNECTED);
+          }
+        }
+      }
+    },
+    [serialMode, addLog],
+  );
+
+  // Fix: uploadCode needs to use reconnectAfterUpload
+  const uploadCodeWithReconnect = useCallback(
     async (code: string) => {
       if (!connectedPort) {
         addLog("No device connected", "error");
         return;
       }
 
+      const savedPort = connectedPort;
       setConnectionStatus(ConnectionStatus.UPLOADING);
 
       if (isLinkConnected) {
@@ -432,62 +538,62 @@ export const useHardware = () => {
           // 1. Release serial port for arduino-cli
           addLog("Releasing serial port for upload...", "info");
           if (serialMode === "link") {
-            await linkConn.current?.disconnectPort();
+            try {
+              await linkConn.current?.disconnectPort();
+            } catch {
+              // Port might already be disconnected
+            }
           } else {
-            await serialConn.current?.disconnect();
+            try {
+              await serialConn.current?.disconnect();
+            } catch {
+              // Port might already be disconnected
+            }
           }
           await new Promise((r) => setTimeout(r, 500));
 
           // 2. Compile + upload via Link HTTP API
-          const response = await fetch(`${LINK_URL}/api/upload`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, port: connectedPort }),
-          });
+          const controller = new AbortController();
+          const uploadTimeout = setTimeout(
+            () => controller.abort(),
+            120000,
+          );
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-              errorData.error || `Upload failed (${response.status})`,
-            );
+          try {
+            const response = await fetch(`${LINK_URL}/api/upload`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, port: savedPort }),
+              signal: controller.signal,
+            });
+
+            clearTimeout(uploadTimeout);
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(
+                errorData.error || `Upload failed (${response.status})`,
+              );
+            }
+
+            const result = await response.json();
+            addLog(result.message || "Upload successful!", "success");
+          } catch (e: any) {
+            clearTimeout(uploadTimeout);
+            if (e.name === "AbortError") {
+              throw new Error("Upload timed out (120s)");
+            }
+            throw e;
           }
 
-          const result = await response.json();
-          addLog(result.message || "Upload successful!", "success");
-
-          // 3. Reconnect serial
-          addLog("Reconnecting serial monitor...", "info");
-          await new Promise((r) => setTimeout(r, 1500));
-          if (serialMode === "link") {
-            await linkConn.current?.connectPort(
-              connectedPort,
-              baudRateRef.current,
-            );
-          } else {
-            await serialConn.current?.connect(baudRateRef.current);
-          }
-          setConnectionStatus(ConnectionStatus.CONNECTED);
+          // 3. Reconnect serial with retries
+          await reconnectAfterUpload(savedPort);
         } catch (e: any) {
           addLog(`Upload failed: ${e.message}`, "error");
           setConnectionStatus(ConnectionStatus.ERROR);
 
           // Try reconnecting serial even on error
-          try {
-            await new Promise((r) => setTimeout(r, 1000));
-            if (serialMode === "link") {
-              await linkConn.current?.connectPort(
-                connectedPort,
-                baudRateRef.current,
-              );
-            } else {
-              await serialConn.current?.connect(baudRateRef.current);
-            }
-          } catch {
-            addLog(
-              "Could not reconnect serial. Click Connect Device.",
-              "error",
-            );
-          }
+          await reconnectAfterUpload(savedPort, true);
         }
       } else {
         // No Link: compile-only via Docker bridge
@@ -497,7 +603,7 @@ export const useHardware = () => {
           const response = await fetch(`/api/hardware/upload`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, port: connectedPort }),
+            body: JSON.stringify({ code, port: savedPort }),
           });
 
           if (!response.ok) {
@@ -520,7 +626,7 @@ export const useHardware = () => {
         }
       }
     },
-    [connectedPort, isLinkConnected, serialMode, addLog],
+    [connectedPort, isLinkConnected, serialMode, addLog, reconnectAfterUpload],
   );
 
   return {
@@ -538,7 +644,7 @@ export const useHardware = () => {
     // Actions
     connectToDevice,
     disconnectDevice,
-    uploadCode,
+    uploadCode: uploadCodeWithReconnect,
     sendSerialData,
     clearSerialLines,
     refreshPorts,

@@ -15,8 +15,34 @@ function broadcast(data) {
 
 const wss = new WebSocket.Server({ port: 8991, host: '127.0.0.1' })
 
+// Register serial port lifecycle events once — broadcast to all clients
+serial.setEventCallback((event, message) => {
+  if (event === 'error') {
+    broadcast({ type: 'ERROR', message: `Serial port error: ${message}` })
+  } else if (event === 'close') {
+    broadcast({ type: 'DISCONNECTED', message: 'Serial port closed unexpectedly' })
+  }
+})
+
+// Heartbeat: detect dead clients
+const HEARTBEAT_INTERVAL = 15000
+const heartbeat = setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (ws.isAlive === false) {
+      console.log('[WS] Terminating unresponsive client')
+      return ws.terminate()
+    }
+    ws.isAlive = false
+    ws.ping()
+  })
+}, HEARTBEAT_INTERVAL)
+
+wss.on('close', () => clearInterval(heartbeat))
+
 wss.on('connection', ws => {
   console.log('[WS] Client connected')
+  ws.isAlive = true
+  ws.on('pong', () => { ws.isAlive = true })
 
   // Register a single data callback for this WebSocket client.
   // serial.connect() auto-attaches this to every new port instance,
@@ -50,17 +76,17 @@ wss.on('connection', ws => {
 
       case 'CONNECT': {
         try {
-          serial.connect(msg.port, msg.baudRate || 9600)
+          await serial.connect(msg.port, msg.baudRate || 9600)
           safeSend(ws, { type: 'CONNECTED', port: msg.port, requestId })
         } catch (e) {
-          safeSend(ws, { type: 'ERROR', message: e.message, requestId })
+          safeSend(ws, { type: 'ERROR', message: `Failed to connect: ${e.message}`, requestId })
         }
         break
       }
 
       case 'DISCONNECT': {
         try {
-          const result = serial.disconnect()
+          const result = await serial.disconnect()
           safeSend(ws, { type: 'DISCONNECTED', message: result, requestId })
         } catch (e) {
           safeSend(ws, { type: 'ERROR', message: e.message, requestId })
@@ -120,6 +146,11 @@ wss.on('connection', ws => {
         break
       }
 
+      case 'PING': {
+        safeSend(ws, { type: 'PONG', requestId })
+        break
+      }
+
       default:
         safeSend(ws, { type: 'ERROR', message: `Unknown message type: ${type}` })
     }
@@ -127,6 +158,10 @@ wss.on('connection', ws => {
 
   ws.on('close', () => {
     console.log('[WS] Client disconnected')
+  })
+
+  ws.on('error', (err) => {
+    console.error('[WS] Client error:', err.message)
   })
 
   // Send ready signal
@@ -139,4 +174,4 @@ function safeSend(ws, data) {
   }
 }
 
-console.log('EduPrime Link WebSocket running on ws://localhost:8989')
+console.log('EduPrime Link WebSocket running on ws://localhost:8991')

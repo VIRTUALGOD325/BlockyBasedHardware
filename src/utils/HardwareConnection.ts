@@ -30,8 +30,14 @@ export class HardwareConnection extends EventTarget {
   private ws: WebSocket | null;
   public connected: boolean;
   private pendingReq: Map<string, PendingRequest>;
-  private reconnectInterval: number;
   private reconnectTimer: NodeJS.Timeout | null;
+  private reconnectAttempts: number;
+  private shouldReconnect: boolean;
+
+  // Reconnect config
+  private static readonly BASE_RECONNECT_MS = 1000;
+  private static readonly MAX_RECONNECT_MS = 15000;
+  private static readonly MAX_RECONNECT_ATTEMPTS = 50;
 
   constructor(url = "ws://localhost:8991") {
     super();
@@ -39,8 +45,9 @@ export class HardwareConnection extends EventTarget {
     this.ws = null;
     this.connected = false;
     this.pendingReq = new Map();
-    this.reconnectInterval = 3000;
     this.reconnectTimer = null;
+    this.reconnectAttempts = 0;
+    this.shouldReconnect = true;
   }
 
   connect() {
@@ -52,10 +59,18 @@ export class HardwareConnection extends EventTarget {
       return;
     }
 
-    this.ws = new WebSocket(this.url);
+    this.shouldReconnect = true;
+
+    try {
+      this.ws = new WebSocket(this.url);
+    } catch {
+      this.scheduleReconnect();
+      return;
+    }
 
     this.ws.onopen = () => {
       this.connected = true;
+      this.reconnectAttempts = 0;
       this.dispatchEvent(new CustomEvent("CONNECTED"));
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
@@ -73,22 +88,58 @@ export class HardwareConnection extends EventTarget {
     };
 
     this.ws.onclose = () => {
+      const wasConnected = this.connected;
       this.connected = false;
-      this.dispatchEvent(new CustomEvent("DISCONNECTED"));
       this.ws = null;
 
-      // Auto-reconnect
-      if (!this.reconnectTimer) {
-        this.reconnectTimer = setTimeout(() => {
-          this.reconnectTimer = null;
-          this.connect();
-        }, this.reconnectInterval);
+      // Reject all pending requests — the connection is gone
+      this.rejectAllPending("Connection to EduPrime-Link lost");
+
+      if (wasConnected) {
+        this.dispatchEvent(new CustomEvent("DISCONNECTED"));
+      }
+
+      if (this.shouldReconnect) {
+        this.scheduleReconnect();
       }
     };
 
-    this.ws.onerror = (error) => {
-      this.dispatchEvent(new CustomEvent("ERROR", { detail: error }));
+    this.ws.onerror = () => {
+      // onclose will fire after this, so we just log/dispatch
+      this.dispatchEvent(
+        new CustomEvent("ERROR", {
+          detail: "WebSocket connection error",
+        }),
+      );
     };
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer) return;
+    if (
+      this.reconnectAttempts >= HardwareConnection.MAX_RECONNECT_ATTEMPTS
+    ) {
+      this.dispatchEvent(
+        new CustomEvent("LINK_ERROR", {
+          detail: "Max reconnection attempts reached. Click to retry.",
+        }),
+      );
+      return;
+    }
+
+    // Exponential backoff with jitter
+    const delay = Math.min(
+      HardwareConnection.BASE_RECONNECT_MS *
+        Math.pow(1.5, this.reconnectAttempts) +
+        Math.random() * 500,
+      HardwareConnection.MAX_RECONNECT_MS,
+    );
+
+    this.reconnectAttempts++;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
   }
 
   private handleMessage(msg: LinkMessage) {
@@ -100,7 +151,6 @@ export class HardwareConnection extends EventTarget {
         break;
 
       case "PORTS": {
-        // Resolve pending listPorts request
         if (requestId) this.resolveRequest(requestId, msg.data);
         break;
       }
@@ -115,7 +165,11 @@ export class HardwareConnection extends EventTarget {
 
       case "DISCONNECTED": {
         if (requestId) this.resolveRequest(requestId, msg);
-        this.dispatchEvent(new CustomEvent("PORT_DISCONNECTED"));
+        this.dispatchEvent(
+          new CustomEvent("PORT_DISCONNECTED", {
+            detail: msg.message,
+          }),
+        );
         break;
       }
 
@@ -157,6 +211,11 @@ export class HardwareConnection extends EventTarget {
         break;
       }
 
+      case "PONG": {
+        if (requestId) this.resolveRequest(requestId, msg);
+        break;
+      }
+
       case "ERROR": {
         if (requestId) {
           this.rejectRequest(
@@ -191,7 +250,7 @@ export class HardwareConnection extends EventTarget {
 
   /** Compile and upload C++ code */
   async uploadCode(code: string, port: string): Promise<any> {
-    return this.sendRequest("UPLOAD_CODE", { code, port }, 60000); // 60s timeout for compile+upload
+    return this.sendRequest("UPLOAD_CODE", { code, port }, 60000);
   }
 
   /** Send raw serial data */
@@ -204,15 +263,38 @@ export class HardwareConnection extends EventTarget {
     this.sendRaw({ type: "SEND_CODE", code });
   }
 
-  disconnect() {
+  /** Check if the WebSocket connection is alive */
+  async ping(): Promise<boolean> {
+    try {
+      await this.sendRequest("PING", {}, 3000);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Reset reconnect counter and retry immediately */
+  retryConnect() {
+    this.reconnectAttempts = 0;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.connect();
+  }
+
+  disconnect() {
+    this.shouldReconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.rejectAllPending("Connection closed");
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
+    this.connected = false;
   }
 
   // --- Internal helpers ---
@@ -224,7 +306,7 @@ export class HardwareConnection extends EventTarget {
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.connected || !this.ws) {
-        reject(new Error("Not connected to Eduprime-Link"));
+        reject(new Error("Not connected to EduPrime-Link"));
         return;
       }
 
@@ -237,13 +319,23 @@ export class HardwareConnection extends EventTarget {
 
       this.pendingReq.set(requestId, { resolve, reject, timeOut });
 
-      this.ws.send(JSON.stringify({ type, requestId, ...payload }));
+      try {
+        this.ws.send(JSON.stringify({ type, requestId, ...payload }));
+      } catch (e: any) {
+        clearTimeout(timeOut);
+        this.pendingReq.delete(requestId);
+        reject(new Error(`Failed to send: ${e.message}`));
+      }
     });
   }
 
   private sendRaw(data: Record<string, any>) {
     if (this.connected && this.ws) {
-      this.ws.send(JSON.stringify(data));
+      try {
+        this.ws.send(JSON.stringify(data));
+      } catch {
+        // Connection may have dropped between check and send
+      }
     }
   }
 
@@ -263,6 +355,14 @@ export class HardwareConnection extends EventTarget {
       this.pendingReq.delete(requestId);
       pending.reject(error);
     }
+  }
+
+  private rejectAllPending(reason: string) {
+    for (const [id, pending] of this.pendingReq) {
+      clearTimeout(pending.timeOut);
+      pending.reject(new Error(reason));
+    }
+    this.pendingReq.clear();
   }
 
   private generateId() {
