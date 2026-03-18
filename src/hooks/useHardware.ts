@@ -7,8 +7,10 @@ import {
 import { ConnectionStatus, LogMessage } from "../types";
 import { SerialLine } from "../components/SerialMonitor";
 
-// Use the same hostname the page is loaded from, but always target Link's fixed ports
-const LINK_HOST = window.location.hostname || "127.0.0.1";
+// Link always runs on the user's machine — use localhost for local dev,
+// 127.0.0.1 when accessed from a deployed (HTTPS) origin
+const LINK_HOST =
+  window.location.hostname === "localhost" ? "localhost" : "127.0.0.1";
 const LINK_URL = `http://${LINK_HOST}:8990`;
 const LINK_WS_URL = `ws://${LINK_HOST}:8991`;
 
