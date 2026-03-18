@@ -111,10 +111,11 @@ async function startServer() {
         const server = app.listen(PORT, '0.0.0.0', async () => {
             console.log(`🚀 EduPrime Link running on http://localhost:${PORT}`);
 
-            // Start WebSocket server for serial communication
+            // Attach WebSocket server to the same HTTP server (same port)
             try {
-                require('./websocket');
-                console.log('🔌 WebSocket server started on ws://localhost:8991');
+                const { attachToServer } = require('./websocket');
+                attachToServer(server);
+                console.log('🔌 WebSocket server attached on ws://localhost:' + PORT);
             } catch (wsErr) {
                 console.error('⚠️ WebSocket server failed to start:', wsErr.message);
             }

@@ -7,12 +7,12 @@ import {
 import { ConnectionStatus, LogMessage } from "../types";
 import { SerialLine } from "../components/SerialMonitor";
 
-// Link always runs on the user's machine — use localhost for local dev,
-// 127.0.0.1 when accessed from a deployed (HTTPS) origin
+// Link always runs on the user's machine on port 8990 (HTTP + WebSocket).
+// Use localhost for local dev, 127.0.0.1 when accessed from a deployed origin.
 const LINK_HOST =
   window.location.hostname === "localhost" ? "localhost" : "127.0.0.1";
 const LINK_URL = `http://${LINK_HOST}:8990`;
-const LINK_WS_URL = `ws://${LINK_HOST}:8991`;
+const LINK_WS_URL = `ws://${LINK_HOST}:8990`;
 
 export type SerialMode = "link" | "webserial";
 

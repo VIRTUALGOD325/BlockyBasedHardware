@@ -39,7 +39,7 @@ export class HardwareConnection extends EventTarget {
   private static readonly MAX_RECONNECT_MS = 15000;
   private static readonly MAX_RECONNECT_ATTEMPTS = 50;
 
-  constructor(url = "ws://localhost:8991") {
+  constructor(url = "ws://localhost:8990") {
     super();
     this.url = url;
     this.ws = null;
