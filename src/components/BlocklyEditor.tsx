@@ -15,11 +15,13 @@ const Blockly = BlocklyFromModule.default || BlocklyFromModule;
 interface BlocklyEditorProps {
   themeMode: "light" | "dark";
   onCodeChange: (code: string) => void;
+  onWorkspaceReady?: (workspace: any) => void;
 }
 
 export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   themeMode,
   onCodeChange,
+  onWorkspaceReady,
 }) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<any>(null);
@@ -176,6 +178,25 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       trashcan: true,
       media: "https://unpkg.com/blockly@12.3.1/media/",
     });
+
+    // Expose workspace to parent
+    onWorkspaceReady?.(workspaceRef.current);
+
+    // Remove the flyout scrollbar entirely — use MutationObserver
+    // since Blockly may create it asynchronously after inject
+    const container = blocklyDiv.current;
+    if (container) {
+      const removeScrollbar = () => {
+        container
+          .querySelectorAll(".blocklyFlyoutScrollbar")
+          .forEach((el) => el.remove());
+      };
+      removeScrollbar();
+      const mo = new MutationObserver(removeScrollbar);
+      mo.observe(container, { childList: true, subtree: true });
+      // Stop observing after a few seconds once DOM has settled
+      setTimeout(() => mo.disconnect(), 3000);
+    }
 
     // Observe container size changes and tell Blockly to resize
     const resizeObserver = new ResizeObserver(() => {

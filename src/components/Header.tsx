@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Usb,
   Settings,
   ChevronDown,
   RefreshCw,
-  Link,
-  Globe,
   Play,
+  LogIn,
+  Pencil,
+  ArrowLeft,
 } from "lucide-react";
 import { ConnectionStatus, ThemeMode } from "../types";
 import { SerialPortInfo } from "../utils/HardwareConnection";
+import { UserMenu } from "./UserMenu";
+import { User } from "../hooks/useAuth";
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -32,6 +35,17 @@ interface HeaderProps {
   isWebSerialSupported: boolean;
   availablePorts: SerialPortInfo[];
   onRefreshPorts: () => void;
+  // Settings
+  isSettingsOpen: boolean;
+  onToggleSettings: () => void;
+  // Project
+  projectName: string;
+  hasUnsavedChanges: boolean;
+  onRenameProject: (name: string) => void;
+  // Auth
+  user: User | null;
+  onLoginClick: () => void;
+  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -52,8 +66,40 @@ export const Header: React.FC<HeaderProps> = ({
   isWebSerialSupported,
   availablePorts,
   onRefreshPorts,
+  isSettingsOpen,
+  onToggleSettings,
+  projectName,
+  hasUnsavedChanges,
+  onRenameProject,
+  user,
+  onLoginClick,
+  onLogout,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(projectName);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEditName(projectName);
+  }, [projectName]);
+
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  const commitRename = () => {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== projectName) {
+      onRenameProject(trimmed);
+    } else {
+      setEditName(projectName);
+    }
+    setIsEditingName(false);
+  };
 
   const isConnected = connectionStatus === ConnectionStatus.CONNECTED;
   const isUploading = connectionStatus === ConnectionStatus.UPLOADING;
@@ -70,8 +116,8 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="flex h-[52px] w-full select-none z-[100] relative">
       <div className="flex-1 flex items-center justify-between px-4 border-b border-white/5 relative bg-[#1a1d27] transition-colors">
-        {/* Left Side: Logo and Navigation */}
-        <div className="flex items-center gap-4">
+        {/* Left Side: Logo, Nav, Project Name */}
+        <div className="flex items-center gap-3">
           <div
             className="flex items-center gap-2 cursor-pointer text-white"
             onClick={navigateToScratch}
@@ -84,53 +130,78 @@ export const Header: React.FC<HeaderProps> = ({
 
           <span className="text-white/30 text-xs">•</span>
 
-          <div
-            className="flex items-center gap-1.5 text-white/50 hover:text-white/80 cursor-pointer text-[13px] font-medium transition-colors"
+          <button
+            className="p-1 rounded text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
             onClick={() =>
               (window.location.href = "https://scratch-seven-lemon.vercel.app/")
             }
+            title="Back to Scratch"
           >
-            <span>&larr;</span>
-            <span>Scratch</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="text-white/20 text-xs">|</span>
+
+          {/* Project Name (editable) + Unsaved Indicator */}
+          <div className="flex items-center gap-1.5">
+            {isEditingName ? (
+              <input
+                ref={nameInputRef}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") {
+                    setEditName(projectName);
+                    setIsEditingName(false);
+                  }
+                }}
+                className="text-[13px] font-medium text-white/90 bg-white/10 border border-white/20 rounded px-1.5 py-0.5 outline-none focus:border-indigo-500/50 max-w-[180px]"
+                maxLength={40}
+              />
+            ) : (
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="flex items-center gap-1 text-[13px] font-medium text-white/60 hover:text-white/90 max-w-[180px] truncate transition-colors group"
+                title="Click to rename"
+              >
+                <span className="truncate">{projectName}</span>
+                <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
+              </button>
+            )}
+            {hasUnsavedChanges && (
+              <span className="text-amber-400 text-[14px] leading-none" title="Unsaved changes">
+                ●
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Center: Connection Center (Inline) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-0">
-          {/* Connection Status Panel */}
-          <div
-            className="flex flex-col items-center px-5 py-1.5 border border-white/10 rounded-l-lg bg-white/5 cursor-pointer"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
-            <span className="text-[9px] font-bold text-white/60 tracking-[0.15em] uppercase">
-              Connection Center
-            </span>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isConnected
-                    ? "bg-emerald-400"
-                    : isUploading
-                      ? "bg-blue-400 animate-pulse"
-                      : "bg-amber-500"
-                }`}
-              />
-              <span
-                className={`text-[11px] font-semibold tracking-wider ${
-                  isConnected
-                    ? "text-emerald-400"
-                    : isUploading
-                      ? "text-blue-400"
-                      : "text-white/60"
-                }`}
-              >
-                {isConnected
-                  ? "CONNECTED"
+        {/* Center: Connection (compact) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          {/* Status indicator */}
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                isConnected
+                  ? "bg-emerald-400"
                   : isUploading
-                    ? "UPLOADING"
-                    : "DISCONNECTED"}
-              </span>
-            </div>
+                    ? "bg-blue-400 animate-pulse"
+                    : "bg-amber-500"
+              }`}
+            />
+            <span
+              className={`text-[10px] font-semibold tracking-wide ${
+                isConnected
+                  ? "text-emerald-400"
+                  : isUploading
+                    ? "text-blue-400"
+                    : "text-white/50"
+              }`}
+            >
+              {isConnected ? "Connected" : isUploading ? "Uploading" : "Disconnected"}
+            </span>
           </div>
 
           {/* Port Selector */}
@@ -143,10 +214,10 @@ export const Header: React.FC<HeaderProps> = ({
                   setDropdownOpen(!dropdownOpen);
                 }
               }}
-              className="flex items-center gap-2 px-4 py-3 border-y border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-white/70 hover:text-white/90"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/[0.08] transition-colors text-white/70 hover:text-white/90"
             >
-              <Usb className="w-3.5 h-3.5" />
-              <span className="text-[12px] font-medium">
+              <Usb className="w-3 h-3" />
+              <span className="text-[11px] font-medium">
                 {connectedPort || "Select Port"}
               </span>
               <ChevronDown
@@ -206,11 +277,20 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Link Status */}
-          <div className="flex flex-col items-center px-4 py-1.5 border border-l-0 border-white/10 rounded-r-lg bg-white/[0.03]">
-            <span className="text-[10px] text-white/50 font-medium">Link</span>
+          {/* Link badge */}
+          <div
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
+              isLinkConnected
+                ? "bg-emerald-400/10"
+                : "bg-white/5"
+            }`}
+            title={isLinkConnected ? "EduPrime Link connected via USB" : "EduPrime Link offline"}
+          >
+            <span className="text-[9px] text-white/40 font-medium">Link:</span>
             <span
-              className={`text-[11px] font-semibold ${isLinkConnected ? "text-emerald-400" : "text-red-400"}`}
+              className={`text-[10px] font-semibold ${
+                isLinkConnected ? "text-emerald-400" : "text-red-400/70"
+              }`}
             >
               {isLinkConnected ? "USB" : "Offline"}
             </span>
@@ -219,51 +299,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 text-white">
-          {/* Link / Browser Mode Toggle Buttons */}
-          <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
-            <button
-              onClick={() => onSetSerialMode("link")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                serialMode === "link"
-                  ? "bg-white text-[#1a1d27] shadow-sm"
-                  : "text-white/50 hover:text-white/80"
-              }`}
-            >
-              <Link className="w-3 h-3" />
-              Link
-            </button>
-            <button
-              onClick={() => {
-                if (isWebSerialSupported) onSetSerialMode("webserial");
-              }}
-              disabled={!isWebSerialSupported}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                serialMode === "webserial"
-                  ? "bg-white text-[#1a1d27] shadow-sm"
-                  : "text-white/50 hover:text-white/80"
-              } ${!isWebSerialSupported ? "opacity-30 cursor-not-allowed" : ""}`}
-            >
-              <Globe className="w-3 h-3" />
-              Browser
-            </button>
-          </div>
-
-          <div className="w-px h-5 bg-white/10 mx-1" />
-
           {/* Execute Button */}
           <button
             onClick={onRunCode}
             disabled={!isConnected || isUploading}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed text-[12px] font-bold transition-all border ${
+            className={`p-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border ${
               isConnected && !isUploading
                 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
                 : "bg-white/5 text-white/60 border-white/10"
             }`}
+            title="Execute"
           >
             <Play
-              className={`w-3.5 h-3.5 ${isUploading ? "animate-bounce" : ""}`}
+              className={`w-4 h-4 ${isUploading ? "animate-bounce" : ""}`}
             />
-            Execute
           </button>
 
           {/* Tools Group */}
@@ -291,12 +340,32 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-mono text-xs font-bold">&gt;_</span>
             </button>
             <button
-              className="px-2 py-1.5 rounded-md transition-all text-white/40 hover:bg-white/5 hover:text-white/70"
+              onClick={onToggleSettings}
+              className={`px-2 py-1.5 rounded-md transition-all ${
+                isSettingsOpen
+                  ? "bg-white/10 text-white"
+                  : "text-white/40 hover:bg-white/5 hover:text-white/70"
+              }`}
               title="Settings"
             >
               <Settings className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          <div className="w-px h-5 bg-white/10 mx-1" />
+
+          {/* Auth: Login Button or User Menu */}
+          {user ? (
+            <UserMenu user={user} onLogout={onLogout} />
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/60 hover:text-white/90 hover:bg-white/5 border border-white/10 transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Sign In
+            </button>
+          )}
         </div>
       </div>
     </header>

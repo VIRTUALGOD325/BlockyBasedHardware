@@ -1,11 +1,36 @@
 export default {
     kind: "categoryToolbox",
     contents: [
+        // ─── Events ───
+        {
+            kind: "category",
+            name: "Events",
+            colour: "#FFBF00",
+            contents: [
+                { kind: "block", type: "arduino_start" },
+            ]
+        },
+
+        // ─── Control ───
+        {
+            kind: "category",
+            name: "Control",
+            colour: "#FFAB19",
+            contents: [
+                { kind: "block", type: "forever_loop" },
+                { kind: "block", type: "controls_repeat_ext" },
+                { kind: "block", type: "controls_whileUntil" },
+                { kind: "block", type: "controls_if" },
+                { kind: "block", type: "delay_ms" },
+                { kind: "block", type: "delay_us" },
+            ]
+        },
+
         // ─── Pin ───
         {
             kind: "category",
             name: "Pin",
-            colour: "#FF6680",
+            colour: "#4C97FF",
             contents: [
                 { kind: "block", type: "set_pin_mode" },
                 { kind: "block", type: "digital_write" },
@@ -15,6 +40,7 @@ export default {
                 { kind: "block", type: "pulse_in" },
                 { kind: "block", type: "led_control" },
                 { kind: "block", type: "play_tone" },
+                { kind: "block", type: "servo_write" },
                 { kind: "block", type: "suspend_pin" },
                 { kind: "block", type: "do_not_suspend_pin" },
             ]
@@ -24,7 +50,7 @@ export default {
         {
             kind: "category",
             name: "Actuators",
-            colour: "#FFAB19",
+            colour: "#00B4D8",
             contents: [
                 { kind: "block", type: "set_servo_angle" },
                 { kind: "block", type: "servo_read" },
@@ -34,10 +60,28 @@ export default {
             ]
         },
 
-        // ─── Serial Port ───
+        // ─── Sensor ───
         {
             kind: "category",
-            name: "Serial Port",
+            name: "Sensor",
+            colour: "#5CB1D6",
+            contents: [
+                { kind: "block", type: "read_ultrasonic" },
+                { kind: "block", type: "read_dht" },
+                { kind: "block", type: "read_ir" },
+                { kind: "block", type: "ir_result_available" },
+                { kind: "block", type: "ir_get_value" },
+                { kind: "block", type: "ir_resume" },
+                { kind: "block", type: "ir_key_code" },
+                { kind: "block", type: "timer" },
+                { kind: "block", type: "reset_timer" },
+            ]
+        },
+
+        // ─── Serial ───
+        {
+            kind: "category",
+            name: "Serial",
             colour: "#00979D",
             contents: [
                 { kind: "block", type: "serial_begin" },
@@ -62,6 +106,26 @@ export default {
                 { kind: "block", type: "serial_available" },
                 { kind: "block", type: "serial_read" },
                 { kind: "block", type: "serial_read_string" },
+            ]
+        },
+
+        // ─── Operators ───
+        {
+            kind: "category",
+            name: "Operators",
+            colour: "#59C059",
+            contents: [
+                { kind: "block", type: "math_arithmetic" },
+                { kind: "block", type: "math_random_int" },
+                { kind: "block", type: "logic_compare" },
+                { kind: "block", type: "logic_operation" },
+                { kind: "block", type: "logic_negate" },
+                { kind: "block", type: "logic_boolean" },
+                { kind: "block", type: "math_number" },
+                { kind: "block", type: "math_modulo" },
+                { kind: "block", type: "math_constrain" },
+                { kind: "block", type: "text" },
+                { kind: "block", type: "text_join" },
             ]
         },
 
@@ -102,67 +166,6 @@ export default {
                 { kind: "block", type: "ascii_num" },
             ]
         },
-
-        // ─── Sensor ───
-        {
-            kind: "category",
-            name: "Sensor",
-            colour: "#4CBFE6",
-            contents: [
-                { kind: "block", type: "read_ultrasonic" },
-                { kind: "block", type: "read_dht" },
-                { kind: "block", type: "read_ir" },
-                { kind: "block", type: "ir_result_available" },
-                { kind: "block", type: "ir_get_value" },
-                { kind: "block", type: "ir_resume" },
-                { kind: "block", type: "ir_key_code" },
-                { kind: "block", type: "timer" },
-                { kind: "block", type: "reset_timer" },
-            ]
-        },
-
-        // ─── Events ───
-        {
-            kind: "category",
-            name: "Events",
-            colour: "#FFBF00",
-            contents: [
-                { kind: "block", type: "arduino_start" },
-            ]
-        },
-
-        // ─── Control ───
-        {
-            kind: "category",
-            name: "Control",
-            colour: "#FFAB19",
-            contents: [
-                { kind: "block", type: "forever_loop" },
-                { kind: "block", type: "controls_repeat_ext" },
-                { kind: "block", type: "controls_whileUntil" },
-                { kind: "block", type: "controls_if" },
-                { kind: "block", type: "delay_ms" },
-                { kind: "block", type: "delay_us" },
-            ]
-        },
-
-        // ─── Operators ───
-        {
-            kind: "category",
-            name: "Operators",
-            colour: "#59C059",
-            contents: [
-                { kind: "block", type: "math_arithmetic" },
-                { kind: "block", type: "math_random_int" },
-                { kind: "block", type: "logic_compare" },
-                { kind: "block", type: "logic_operation" },
-                { kind: "block", type: "logic_negate" },
-                { kind: "block", type: "math_number" },
-                { kind: "block", type: "text" },
-                { kind: "block", type: "text_join" },
-            ]
-        },
-
 
         // ─── Evive RGB ───
         {

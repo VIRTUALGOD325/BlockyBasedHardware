@@ -4,8 +4,13 @@ import { BlocklyEditor } from "./components/BlocklyEditor";
 import { ConsolePanel } from "./components/ConsolePanel";
 import { SerialMonitor } from "./components/SerialMonitor";
 import { CodePreviewPanel } from "./components/CodePreviewPanel";
+import { SettingsPanel } from "./components/SettingsPanel";
+import { AuthPage } from "./components/AuthPage";
 import { useTheme } from "./hooks/useTheme";
 import { useHardware } from "./hooks/useHardware";
+import { useSettings } from "./hooks/useSettings";
+import { useAuth } from "./hooks/useAuth";
+import { useProject } from "./hooks/useProject";
 import {
   Terminal,
   Code2,
@@ -40,9 +45,15 @@ const App: React.FC = () => {
     addLog,
   } = useHardware();
 
+  const { settings, updateSetting, resetSettings } = useSettings();
+  const { user, isAuthenticated, isLoading: authLoading, error: authError, login, register, logout, clearError } = useAuth();
+  const { projectName, setProjectName, hasUnsavedChanges, markChanged, saveToFile, loadFromFile, newProject, setWorkspace } = useProject();
+
   const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>("console");
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Store generated code for upload and code preview
   const generatedCodeRef = useRef<string>("");
@@ -51,6 +62,7 @@ const App: React.FC = () => {
   const handleCodeChange = (code: string) => {
     generatedCodeRef.current = code;
     setGeneratedCode(code);
+    markChanged();
   };
 
   // Run Code — one-click: convert blocks → C++ → upload directly
@@ -94,15 +106,26 @@ const App: React.FC = () => {
         isWebSerialSupported={isWebSerialSupported}
         availablePorts={availablePorts}
         onRefreshPorts={refreshPorts}
+        // Settings
+        isSettingsOpen={isSettingsOpen}
+        onToggleSettings={() => setIsSettingsOpen((v) => !v)}
+        // Project
+        projectName={projectName}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onRenameProject={setProjectName}
+        // Auth
+        user={user}
+        onLoginClick={() => setIsLoginModalOpen(true)}
+        onLogout={logout}
       />
 
       {/* Main Workspace Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Top Area: Blockly + Code Preview */}
+        {/* Top Area: Blockly + Code Preview + Settings */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left: Blockly Editor */}
           <div className="flex-1 relative bg-white dark:bg-[#141620] transition-colors duration-200">
-            <BlocklyEditor themeMode={theme} onCodeChange={handleCodeChange} />
+            <BlocklyEditor themeMode={theme} onCodeChange={handleCodeChange} onWorkspaceReady={setWorkspace} />
           </div>
 
           {/* Right Side: Code Preview Panel */}
@@ -119,6 +142,29 @@ const App: React.FC = () => {
                   onClose={() => setIsCodePanelOpen(false)}
                 />
               </div>
+            )}
+          </div>
+
+          {/* Right Side: Settings Panel */}
+          <div
+            className={`${
+              isSettingsOpen ? "w-72 md:w-80" : "w-0"
+            } transition-all duration-300 ease-in-out overflow-hidden h-full z-10 flex flex-col`}
+          >
+            {isSettingsOpen && (
+              <SettingsPanel
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                settings={settings}
+                onUpdateSetting={updateSetting}
+                onResetSettings={resetSettings}
+                onSave={saveToFile}
+                onLoad={loadFromFile}
+                onNewProject={newProject}
+                serialMode={serialMode}
+                onSetSerialMode={setSerialMode}
+                isWebSerialSupported={isWebSerialSupported}
+              />
             )}
           </div>
         </div>
@@ -243,6 +289,17 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+
+      {/* Auth Page */}
+      <AuthPage
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLogin={login}
+        onRegister={register}
+        error={authError}
+        onClearError={clearError}
+        isLoading={authLoading}
+      />
     </div>
   );
 };
