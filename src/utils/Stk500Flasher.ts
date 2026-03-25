@@ -40,40 +40,58 @@ export class Stk500Flasher {
    * The port must NOT be open — this method opens and closes it.
    */
   async flash(binary: Uint8Array, onProgress?: OnProgress): Promise<void> {
-    // Open at 115200 baud (optiboot default)
-    await this.port.open({ baudRate: 115200 });
+    // Try optiboot (115200) first, then old bootloader (57600)
+    const baudRates = [115200, 57600];
+    let synced = false;
 
-    try {
-      this.startReading();
+    for (const baud of baudRates) {
+      await this.port.open({ baudRate: baud });
 
-      // Reset the board by toggling DTR (enter bootloader)
-      await this.port.setSignals({ dataTerminalReady: false });
-      await this.delay(250);
-      await this.port.setSignals({ dataTerminalReady: true });
-      await this.delay(50);
+      try {
+        this.startReading();
 
-      // Drain any garbage from reset
-      this.readBuffer = [];
+        // Reset the board by toggling DTR (enter bootloader)
+        await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+        await this.delay(250);
+        await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
+        // Wait for bootloader to start — optiboot needs ~100ms, old bootloader longer
+        await this.delay(baud === 115200 ? 150 : 500);
 
-      onProgress?.("sync", 0);
+        // Drain any garbage from reset
+        this.readBuffer = [];
 
-      // Sync with bootloader (try multiple times)
-      let synced = false;
-      for (let attempt = 0; attempt < 10; attempt++) {
-        try {
-          await this.getSync();
-          synced = true;
-          break;
-        } catch {
-          await this.delay(50);
-          this.readBuffer = [];
+        onProgress?.("sync", 0);
+
+        // Sync with bootloader (try multiple times)
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            await this.getSync();
+            synced = true;
+            break;
+          } catch {
+            await this.delay(50);
+            this.readBuffer = [];
+          }
+        }
+
+        if (synced) break;
+      } finally {
+        if (!synced) {
+          await this.stopReading();
+          if (this.port.readable || this.port.writable) {
+            await this.port.close();
+          }
         }
       }
-      if (!synced) {
-        throw new Error(
-          "Could not sync with bootloader. Make sure the board has optiboot."
-        );
-      }
+    }
+
+    if (!synced) {
+      throw new Error(
+        "Could not sync with bootloader. Make sure the board is connected and has a compatible bootloader."
+      );
+    }
+
+    try {
 
       onProgress?.("sync", 100);
 
