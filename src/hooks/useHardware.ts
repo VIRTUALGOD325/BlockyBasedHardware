@@ -610,33 +610,116 @@ export const useHardware = () => {
           await reconnectAfterUpload(savedPort, true);
         }
       } else {
-        // No Link: compile-only via Docker bridge
-        addLog("No EduPrime Link → Compile-only mode.", "info");
+        // No Link detected via WebSocket — try compile endpoints with fallback chain
+        addLog("Attempting to compile...", "info");
 
+        // Release the serial port so arduino-cli can use it
+        if (serialMode === "webserial") {
+          try {
+            await serialConn.current?.disconnect();
+          } catch {
+            // Port might already be disconnected
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+
+        let compiled = false;
+
+        // 1. Try EduPrime Link HTTP API (may be running even if WS health check missed it)
         try {
-          const response = await fetch(`/api/hardware/upload`, {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+
+          const response = await fetch(`${LINK_URL}/api/upload`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code, port: savedPort }),
+            signal: controller.signal,
           });
 
-          if (!response.ok) {
+          clearTimeout(timeout);
+
+          if (response.ok) {
+            const result = await response.json();
+            addLog(result.message || "Compile & upload successful!", "success");
+            compiled = true;
+            // Link was actually available — update state
+            setIsLinkConnected(true);
+          } else {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-              errorData.error || `Compile failed (${response.status})`,
-            );
+            throw new Error(errorData.error || `Link compile failed (${response.status})`);
+          }
+        } catch (linkErr: any) {
+          if (linkErr.name !== "AbortError") {
+            // Link genuinely returned an error (not just unreachable)
+            const isNetworkError =
+              linkErr.message?.includes("Failed to fetch") ||
+              linkErr.message?.includes("NetworkError") ||
+              linkErr.message?.includes("Load failed");
+
+            if (!isNetworkError) {
+              // Link responded with a real compile error
+              addLog(`Compile failed: ${linkErr.message}`, "error");
+              setConnectionStatus(ConnectionStatus.ERROR);
+
+              // Reconnect serial
+              if (serialMode === "webserial") {
+                await reconnectAfterUpload(savedPort, true);
+              }
+              return;
+            }
           }
 
-          const result = await response.json();
-          addLog(
-            result.message ||
-              "Compiled! Install EduPrime Link to upload to device.",
-            "success",
-          );
-          setConnectionStatus(ConnectionStatus.CONNECTED);
-        } catch (e: any) {
-          addLog(`Compile failed: ${e.message}`, "error");
+          // 2. Link unreachable — try Docker bridge as fallback
+          try {
+            const response = await fetch(`/api/hardware/upload`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, port: savedPort }),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              addLog(
+                result.message || "Compiled successfully (compile-only mode).",
+                "success",
+              );
+              compiled = true;
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `Compile failed (${response.status})`);
+            }
+          } catch (bridgeErr: any) {
+            const isBridgeNetworkError =
+              bridgeErr.message?.includes("Failed to fetch") ||
+              bridgeErr.message?.includes("NetworkError") ||
+              bridgeErr.message?.includes("Load failed") ||
+              bridgeErr.message?.includes("404");
+
+            if (isBridgeNetworkError) {
+              addLog(
+                "No compiler available. Install EduPrime Link to compile and upload code.",
+                "error",
+              );
+            } else {
+              addLog(`Compile failed: ${bridgeErr.message}`, "error");
+            }
+          }
+        }
+
+        if (compiled) {
+          // Reconnect serial port after successful compile/upload
+          if (serialMode === "webserial") {
+            await reconnectAfterUpload(savedPort);
+          } else {
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+          }
+        } else {
           setConnectionStatus(ConnectionStatus.ERROR);
+          // Try reconnecting serial even on failure
+          if (serialMode === "webserial") {
+            await reconnectAfterUpload(savedPort, true);
+          }
         }
       }
     },
