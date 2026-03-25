@@ -16,6 +16,10 @@ const LINK_HOST =
 const LINK_URL = `http://${LINK_HOST}:8990`;
 const LINK_WS_URL = `ws://${LINK_HOST}:8990`;
 
+// Cloud compile server URL — set via env var at build time, or falls back to Link
+const COMPILE_SERVER_URL =
+  (import.meta as any).env?.VITE_COMPILE_SERVER_URL || "";
+
 export type SerialMode = "link" | "webserial";
 
 export const useHardware = () => {
@@ -612,8 +616,8 @@ export const useHardware = () => {
           await reconnectAfterUpload(savedPort, true);
         }
       } else if (serialMode === "webserial") {
-        // Browser WebSerial mode without Link WS — compile via Link HTTP + flash via STK500
-        addLog("Compiling via EduPrime Link...", "info");
+        // Browser WebSerial mode — compile via cloud/Link, flash via STK500
+        addLog("Compiling...", "info");
 
         // Save port reference before disconnecting
         const rawPort = serialConn.current?.getPort();
@@ -632,48 +636,75 @@ export const useHardware = () => {
         await new Promise((r) => setTimeout(r, 300));
 
         try {
-          // 1. Compile to hex via Link HTTP (must be running locally)
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 120000);
+          // 1. Compile to hex — try cloud server first, then Link as fallback
+          let hexData: string | null = null;
 
-          let hexData: string;
-          try {
-            const response = await fetch(`${LINK_URL}/api/compile-hex`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code }),
-              signal: controller.signal,
+          // Build list of compile endpoints to try (cloud first, then local Link)
+          const compileEndpoints: { url: string; label: string }[] = [];
+          if (COMPILE_SERVER_URL) {
+            compileEndpoints.push({
+              url: `${COMPILE_SERVER_URL}/api/compile-hex`,
+              label: "Cloud compiler",
             });
-            clearTimeout(timeout);
+          }
+          compileEndpoints.push({
+            url: `${LINK_URL}/api/compile-hex`,
+            label: "EduPrime Link",
+          });
 
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Compile failed (${response.status})`);
+          let lastError = "";
+          for (const endpoint of compileEndpoints) {
+            try {
+              addLog(`Trying ${endpoint.label}...`, "info");
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 120000);
+
+              const response = await fetch(endpoint.url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code }),
+                signal: controller.signal,
+              });
+              clearTimeout(timeout);
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(
+                  errorData.error || `Compile failed (${response.status})`,
+                );
+              }
+
+              const result = await response.json();
+              if (!result.hex) {
+                throw new Error("Compiler did not return hex data");
+              }
+              hexData = result.hex;
+              addLog("Compilation successful! Flashing via WebSerial...", "info");
+              break; // Success — stop trying other endpoints
+            } catch (e: any) {
+              const isNetworkError =
+                e.name === "AbortError" ||
+                e.message?.includes("Failed to fetch") ||
+                e.message?.includes("NetworkError") ||
+                e.message?.includes("Load failed");
+
+              if (isNetworkError) {
+                lastError = `${endpoint.label} unreachable`;
+              } else {
+                // Real compile error — don't try other endpoints
+                addLog(`Compile failed: ${e.message}`, "error");
+                setConnectionStatus(ConnectionStatus.ERROR);
+                await reconnectAfterUpload(savedPort, true);
+                return;
+              }
             }
+          }
 
-            const result = await response.json();
-            if (!result.hex) {
-              throw new Error("Compiler did not return hex data");
-            }
-            hexData = result.hex;
-            addLog("Compilation successful! Flashing via WebSerial...", "info");
-          } catch (e: any) {
-            clearTimeout(timeout);
-
-            const isNetworkError =
-              e.name === "AbortError" ||
-              e.message?.includes("Failed to fetch") ||
-              e.message?.includes("NetworkError") ||
-              e.message?.includes("Load failed");
-
-            if (isNetworkError) {
-              addLog(
-                "EduPrime Link not found. Please start EduPrime Link to compile and upload code in browser mode.",
-                "error",
-              );
-            } else {
-              addLog(`Compile failed: ${e.message}`, "error");
-            }
+          if (!hexData) {
+            addLog(
+              `No compiler available (${lastError}). Either deploy the compile server or run EduPrime Link locally.`,
+              "error",
+            );
             setConnectionStatus(ConnectionStatus.ERROR);
             await reconnectAfterUpload(savedPort, true);
             return;
