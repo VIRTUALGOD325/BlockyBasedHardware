@@ -57,6 +57,23 @@ app.post('/api/compile', async (req, res) => {
     }
 });
 
+// ── Compile → return hex (for browser WebSerial flashing) ──
+app.post('/api/compile-hex', async (req, res) => {
+    if (setupStatus !== 'ready') {
+        return res.status(503).json({ success: false, error: `Link is still setting up: ${setupMessage}` });
+    }
+    const { code, board } = req.body;
+    if (!code) {
+        return res.status(400).json({ success: false, error: 'Missing code in request body.' });
+    }
+    try {
+        const result = await compiler.compileToHex(code, board || 'arduino:avr:uno');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ── Compile + Upload ──
 app.post('/api/upload', async (req, res) => {
     if (setupStatus !== 'ready') {

@@ -24,6 +24,11 @@ export class WebSerialConnection extends EventTarget {
     return this._connected;
   }
 
+  /** Get the underlying SerialPort (for direct access, e.g. flashing) */
+  getPort(): SerialPort | null {
+    return this.port;
+  }
+
   /** Check if the browser supports Web Serial API */
   static isSupported(): boolean {
     return "serial" in navigator;

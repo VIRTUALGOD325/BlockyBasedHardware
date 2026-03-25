@@ -6,6 +6,8 @@ import {
 } from "../utils/HardwareConnection";
 import { ConnectionStatus, LogMessage } from "../types";
 import { SerialLine } from "../components/SerialMonitor";
+import { parseIntelHex } from "../utils/IntelHexParser";
+import { Stk500Flasher } from "../utils/Stk500Flasher";
 
 // Link always runs on the user's machine on port 8990 (HTTP + WebSocket).
 // Use localhost for local dev, 127.0.0.1 when accessed from a deployed origin.
@@ -609,118 +611,104 @@ export const useHardware = () => {
           // Try reconnecting serial even on error
           await reconnectAfterUpload(savedPort, true);
         }
-      } else {
-        // No Link detected via WebSocket — try compile endpoints with fallback chain
-        addLog("Attempting to compile...", "info");
+      } else if (serialMode === "webserial") {
+        // Browser WebSerial mode without Link WS — compile via Link HTTP + flash via STK500
+        addLog("Compiling via EduPrime Link...", "info");
 
-        // Release the serial port so arduino-cli can use it
-        if (serialMode === "webserial") {
-          try {
-            await serialConn.current?.disconnect();
-          } catch {
-            // Port might already be disconnected
-          }
-          await new Promise((r) => setTimeout(r, 500));
+        // Save port reference before disconnecting
+        const rawPort = serialConn.current?.getPort();
+        if (!rawPort) {
+          addLog("No serial port available for flashing.", "error");
+          setConnectionStatus(ConnectionStatus.ERROR);
+          return;
         }
 
-        let compiled = false;
-
-        // 1. Try EduPrime Link HTTP API (may be running even if WS health check missed it)
+        // Disconnect cleanly (releases read/write locks but keeps port ref)
         try {
+          await serialConn.current?.disconnect();
+        } catch {
+          // Port might already be disconnected
+        }
+        await new Promise((r) => setTimeout(r, 300));
+
+        try {
+          // 1. Compile to hex via Link HTTP (must be running locally)
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 5000);
+          const timeout = setTimeout(() => controller.abort(), 120000);
 
-          const response = await fetch(`${LINK_URL}/api/upload`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, port: savedPort }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeout);
-
-          if (response.ok) {
-            const result = await response.json();
-            addLog(result.message || "Compile & upload successful!", "success");
-            compiled = true;
-            // Link was actually available — update state
-            setIsLinkConnected(true);
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Link compile failed (${response.status})`);
-          }
-        } catch (linkErr: any) {
-          if (linkErr.name !== "AbortError") {
-            // Link genuinely returned an error (not just unreachable)
-            const isNetworkError =
-              linkErr.message?.includes("Failed to fetch") ||
-              linkErr.message?.includes("NetworkError") ||
-              linkErr.message?.includes("Load failed");
-
-            if (!isNetworkError) {
-              // Link responded with a real compile error
-              addLog(`Compile failed: ${linkErr.message}`, "error");
-              setConnectionStatus(ConnectionStatus.ERROR);
-
-              // Reconnect serial
-              if (serialMode === "webserial") {
-                await reconnectAfterUpload(savedPort, true);
-              }
-              return;
-            }
-          }
-
-          // 2. Link unreachable — try Docker bridge as fallback
+          let hexData: string;
           try {
-            const response = await fetch(`/api/hardware/upload`, {
+            const response = await fetch(`${LINK_URL}/api/compile-hex`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code, port: savedPort }),
+              body: JSON.stringify({ code }),
+              signal: controller.signal,
             });
+            clearTimeout(timeout);
 
-            if (response.ok) {
-              const result = await response.json();
-              addLog(
-                result.message || "Compiled successfully (compile-only mode).",
-                "success",
-              );
-              compiled = true;
-            } else {
+            if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
               throw new Error(errorData.error || `Compile failed (${response.status})`);
             }
-          } catch (bridgeErr: any) {
-            const isBridgeNetworkError =
-              bridgeErr.message?.includes("Failed to fetch") ||
-              bridgeErr.message?.includes("NetworkError") ||
-              bridgeErr.message?.includes("Load failed") ||
-              bridgeErr.message?.includes("404");
 
-            if (isBridgeNetworkError) {
+            const result = await response.json();
+            if (!result.hex) {
+              throw new Error("Compiler did not return hex data");
+            }
+            hexData = result.hex;
+            addLog("Compilation successful! Flashing via WebSerial...", "info");
+          } catch (e: any) {
+            clearTimeout(timeout);
+
+            const isNetworkError =
+              e.name === "AbortError" ||
+              e.message?.includes("Failed to fetch") ||
+              e.message?.includes("NetworkError") ||
+              e.message?.includes("Load failed");
+
+            if (isNetworkError) {
               addLog(
-                "No compiler available. Install EduPrime Link to compile and upload code.",
+                "EduPrime Link not found. Please start EduPrime Link to compile and upload code in browser mode.",
                 "error",
               );
             } else {
-              addLog(`Compile failed: ${bridgeErr.message}`, "error");
+              addLog(`Compile failed: ${e.message}`, "error");
             }
-          }
-        }
-
-        if (compiled) {
-          // Reconnect serial port after successful compile/upload
-          if (serialMode === "webserial") {
-            await reconnectAfterUpload(savedPort);
-          } else {
-            setConnectionStatus(ConnectionStatus.CONNECTED);
-          }
-        } else {
-          setConnectionStatus(ConnectionStatus.ERROR);
-          // Try reconnecting serial even on failure
-          if (serialMode === "webserial") {
+            setConnectionStatus(ConnectionStatus.ERROR);
             await reconnectAfterUpload(savedPort, true);
+            return;
           }
+
+          // 2. Parse intel hex → binary
+          const binary = parseIntelHex(hexData);
+          addLog(`Flashing ${binary.length} bytes...`, "info");
+
+          // 3. Flash via STK500 protocol over WebSerial
+          const flasher = new Stk500Flasher(rawPort);
+          await flasher.flash(binary, (phase, percent) => {
+            if (phase === "sync") {
+              addLog("Syncing with bootloader...", "info");
+            } else if (phase === "program" && percent % 25 === 0) {
+              addLog(`Flashing... ${percent}%`, "info");
+            } else if (phase === "done") {
+              addLog("Flash complete!", "success");
+            }
+          });
+
+          // 4. Reconnect for serial monitor
+          await reconnectAfterUpload(savedPort);
+        } catch (e: any) {
+          addLog(`Upload failed: ${e.message}`, "error");
+          setConnectionStatus(ConnectionStatus.ERROR);
+          await reconnectAfterUpload(savedPort, true);
         }
+      } else {
+        // Link mode but Link not connected
+        addLog(
+          "EduPrime Link is not running. Start the Link app to compile and upload.",
+          "error",
+        );
+        setConnectionStatus(ConnectionStatus.ERROR);
       }
     },
     [connectedPort, isLinkConnected, serialMode, addLog, reconnectAfterUpload],

@@ -75,6 +75,24 @@ class Compiler {
         return { success: true, message: 'Compilation successful!' };
     }
 
+    async compileToHex(code, fqbn = 'arduino:avr:uno') {
+        await this.ensureCoreInstalled(fqbn.split(':').slice(0, 2).join(':'));
+        const sketchDir = await this.compile(code, fqbn);
+        try {
+            // arduino-cli outputs hex in build/fqbn-path/sketch.ino.hex
+            const buildDir = path.join(sketchDir, 'build', fqbn.replace(/:/g, '.'));
+            const dirName = path.basename(sketchDir);
+            const hexPath = path.join(buildDir, `${dirName}.ino.hex`);
+            if (!fs.existsSync(hexPath)) {
+                throw new Error('Compiled hex file not found');
+            }
+            const hex = fs.readFileSync(hexPath, 'utf-8');
+            return { success: true, hex, message: 'Compilation successful!' };
+        } finally {
+            fs.rmSync(sketchDir, { recursive: true, force: true });
+        }
+    }
+
     async checkCli() {
         try {
             const version = await this.runCommand(`"${this.cliPath}" version`);
