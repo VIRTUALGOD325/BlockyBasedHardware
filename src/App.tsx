@@ -164,6 +164,8 @@ const App: React.FC = () => {
                 serialMode={serialMode}
                 onSetSerialMode={setSerialMode}
                 isWebSerialSupported={isWebSerialSupported}
+                theme={theme}
+                toggleTheme={toggleTheme}
               />
             )}
           </div>

@@ -4,7 +4,8 @@ import { ThemeMode } from '../types';
 export const useTheme = () => {
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+      const stored = window.localStorage.getItem('theme');
+      return stored === 'light' ? 'light' : 'dark';
     }
     return 'light';
   });

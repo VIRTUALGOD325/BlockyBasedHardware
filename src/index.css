@@ -100,11 +100,17 @@ body {
   font-weight: 400;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
+  color: #1e293b;
+  background-color: #f8fafc;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+.dark body,
+html.dark body {
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 /* ─── Custom Scrollbar ─── */
@@ -138,17 +144,17 @@ body {
 /* ─── Blockly Workspace Overrides (Desktop App Mockup Style) ─── */
 
 .blocklyToolboxDiv {
-  background-color: #2b2b2b !important;
-  color: #fff !important;
-  border-right: 1px solid #1a1a1a !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-right: 1px solid #e2e8f0 !important;
   padding: 12px 0 0 0 !important;
   font-family: inherit !important;
-  width: 180px !important; /* Thin sidebar */
+  width: 180px !important;
 }
 
-/* Hardcode dark mode for toolbox since mockup strictly uses dark sidebar */
 .dark .blocklyToolboxDiv {
   background-color: #2b2b2b !important;
+  color: #fff !important;
   border-right: 1px solid #1a1a1a !important;
 }
 
@@ -163,13 +169,13 @@ body {
   margin: 0 12px 16px 12px;
   height: 32px;
   border-radius: 4px;
-  background-color: #1a1a1a;
-  color: #888;
+  background-color: #e2e8f0;
+  color: #94a3b8;
   font-size: 13px;
-  border: 1px solid #333;
+  border: 1px solid #cbd5e1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: calc(100% - 10px) center; /* align icon to right */
+  background-position: calc(100% - 10px) center;
 }
 
 .dark .blocklyToolboxDiv::before {
@@ -189,14 +195,14 @@ body {
 }
 
 .blocklyTreeRow:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }
 .dark .blocklyTreeRow:hover {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .blocklyTreeSelected {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
   border-left: 3px solid transparent !important;
 }
 .dark .blocklyTreeSelected {
@@ -207,14 +213,14 @@ body {
   font-family: "Inter", "SF Pro Display", sans-serif !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  color: #e5e7eb !important;
+  color: #334155 !important;
 }
 .dark .blocklyTreeLabel {
   color: #e5e7eb !important;
 }
 
 .blocklyTreeSelected .blocklyTreeLabel {
-  color: #ffffff !important;
+  color: #0f172a !important;
   font-weight: 600 !important;
 }
 .dark .blocklyTreeSelected .blocklyTreeLabel {
@@ -271,22 +277,33 @@ body {
 
 /* Workspace styling */
 .blocklySvg {
-  background-color: #1e1e1e !important; /* Match mockup dark IDE background */
+  background-color: #f8fafc !important;
+}
+.dark .blocklySvg {
+  background-color: #1e1e1e !important;
 }
 
 .blocklyWidgetDiv .goog-menu {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 4px 0 !important;
+}
+.dark .blocklyWidgetDiv .goog-menu {
   background: #2b2d31 !important;
   border: 1px solid #1e1f22 !important;
-  border-radius: 8px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-  padding: 4px 0 !important;
 }
 
 .blocklyWidgetDiv .goog-menuitem {
   padding: 6px 16px !important;
-  color: #dbdee1 !important;
+  color: #334155 !important;
   font-family: var(--font-ui) !important;
   font-size: 13px !important;
+}
+.dark .blocklyWidgetDiv .goog-menuitem {
+  color: #dbdee1 !important;
 }
 
 .blocklyWidgetDiv .goog-menuitem-highlight,
@@ -303,10 +320,16 @@ body {
   background: transparent;
 }
 .blocklyToolboxDiv::-webkit-scrollbar-thumb {
-  background: #1e1f22;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 .blocklyToolboxDiv::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark .blocklyToolboxDiv::-webkit-scrollbar-thumb {
+  background: #1e1f22;
+}
+.dark .blocklyToolboxDiv::-webkit-scrollbar-thumb:hover {
   background: #3f4147;
 }
 
