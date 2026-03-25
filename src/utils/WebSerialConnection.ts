@@ -159,8 +159,17 @@ export class WebSerialConnection extends EventTarget {
     }
 
     this._connected = false;
-    this.port = null;
+    // Keep port reference so reconnect doesn't need user gesture
     this.dispatchEvent(new CustomEvent("DISCONNECTED"));
+  }
+
+  /**
+   * Fully release the port (clears the stored reference).
+   * Use this when the user explicitly wants to pick a different device.
+   */
+  async releasePort(): Promise<void> {
+    await this.disconnect();
+    this.port = null;
   }
 
   /**
