@@ -78,6 +78,18 @@ export class WebSerialConnection extends EventTarget {
         if (!selectedPort) return false;
       }
 
+      // Ensure port is fully closed before opening (handles stale state
+      // after STK500 flasher or browser keeping the port open between sessions)
+      if (this.port!.readable || this.port!.writable) {
+        try {
+          await this.port!.close();
+        } catch {
+          // Already closed or in transition — ignore
+        }
+        // Brief wait for OS to release the port
+        await new Promise((r) => setTimeout(r, 200));
+      }
+
       await this.port!.open({ baudRate });
 
       this._connected = true;
@@ -104,12 +116,26 @@ export class WebSerialConnection extends EventTarget {
       return true;
     } catch (e: any) {
       this._connected = false;
-      // Handle specific error cases
-      if (e.message?.includes("already open")) {
-        // Port was left open from a previous session — close and retry
+      // Port might be stuck open — force-close and retry once
+      if (e.message?.includes("open") || e.message?.includes("Failed")) {
         try {
           await this.port?.close();
-          return this.connect(baudRate);
+          await new Promise((r) => setTimeout(r, 300));
+          await this.port!.open({ baudRate });
+
+          this._connected = true;
+          this.setupDisconnectHandler();
+          if (this.port!.writable) {
+            this.writer = this.port!.writable.getWriter();
+          }
+          this.startReading();
+
+          const info = this.port!.getInfo();
+          const portLabel = info.usbVendorId
+            ? `USB (${info.usbVendorId.toString(16)}:${info.usbProductId?.toString(16)})`
+            : "Serial Device";
+          this.dispatchEvent(new CustomEvent("CONNECTED", { detail: portLabel }));
+          return true;
         } catch {
           // Fall through to error
         }
