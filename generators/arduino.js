@@ -84,8 +84,6 @@ arduinoGen.scrubNakedValue = function (line) {
 };
 
 arduinoGen.scrub_ = function (block, code, thisOnly) {
-  // arduino_start handles its own chain — don't duplicate into loop()
-  if (block.type === 'arduino_start') return code;
   const nextBlock = block.nextConnection && block.nextConnection.targetBlock();
   if (nextBlock && !thisOnly) {
     const nextCode = arduinoGen.blockToCode(nextBlock);
