@@ -72,77 +72,54 @@ export class WebSerialConnection extends EventTarget {
       await this.disconnect();
     }
 
-    try {
-      if (!this.port) {
-        const selectedPort = await this.requestPort();
-        if (!selectedPort) return false;
-      }
-
-      // Ensure port is fully closed before opening (handles stale state
-      // after STK500 flasher or browser keeping the port open between sessions)
-      if (this.port!.readable || this.port!.writable) {
-        try {
-          await this.port!.close();
-        } catch {
-          // Already closed or in transition — ignore
-        }
-        // Brief wait for OS to release the port
-        await new Promise((r) => setTimeout(r, 200));
-      }
-
-      await this.port!.open({ baudRate });
-
-      this._connected = true;
-
-      // Listen for USB disconnect
-      this.setupDisconnectHandler();
-
-      // Set up writer
-      if (this.port!.writable) {
-        this.writer = this.port!.writable.getWriter();
-      }
-
-      // Start reading
-      this.startReading();
-
-      // Get port info for display
-      const info = this.port!.getInfo();
-      const portLabel = info.usbVendorId
-        ? `USB (${info.usbVendorId.toString(16)}:${info.usbProductId?.toString(16)})`
-        : "Serial Device";
-
-      this.dispatchEvent(new CustomEvent("CONNECTED", { detail: portLabel }));
-
-      return true;
-    } catch (e: any) {
-      this._connected = false;
-      // Port might be stuck open — force-close and retry once
-      if (e.message?.includes("open") || e.message?.includes("Failed")) {
-        try {
-          await this.port?.close();
-          await new Promise((r) => setTimeout(r, 300));
-          await this.port!.open({ baudRate });
-
-          this._connected = true;
-          this.setupDisconnectHandler();
-          if (this.port!.writable) {
-            this.writer = this.port!.writable.getWriter();
-          }
-          this.startReading();
-
-          const info = this.port!.getInfo();
-          const portLabel = info.usbVendorId
-            ? `USB (${info.usbVendorId.toString(16)}:${info.usbProductId?.toString(16)})`
-            : "Serial Device";
-          this.dispatchEvent(new CustomEvent("CONNECTED", { detail: portLabel }));
-          return true;
-        } catch {
-          // Fall through to error
-        }
-      }
-      this.dispatchEvent(new CustomEvent("ERROR", { detail: e.message }));
-      return false;
+    // If no port reference, show the browser picker
+    if (!this.port) {
+      const selectedPort = await this.requestPort();
+      if (!selectedPort) return false;
     }
+
+    // Try opening — up to 2 attempts (close-and-retry on failure)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // Ensure port is fully closed before opening (handles stale state
+        // after STK500 flasher or browser keeping port open between sessions)
+        if (this.port!.readable || this.port!.writable) {
+          try { await this.port!.close(); } catch { /* already closed */ }
+          await new Promise((r) => setTimeout(r, 300));
+        }
+
+        await this.port!.open({ baudRate });
+
+        this._connected = true;
+        this.setupDisconnectHandler();
+
+        if (this.port!.writable) {
+          this.writer = this.port!.writable.getWriter();
+        }
+        this.startReading();
+
+        const info = this.port!.getInfo();
+        const portLabel = info.usbVendorId
+          ? `USB (${info.usbVendorId.toString(16)}:${info.usbProductId?.toString(16)})`
+          : "Serial Device";
+        this.dispatchEvent(new CustomEvent("CONNECTED", { detail: portLabel }));
+        return true;
+      } catch (e: any) {
+        this._connected = false;
+        if (attempt === 0) {
+          // First failure — force-close and retry after a longer wait
+          try { await this.port?.close(); } catch { /* ignore */ }
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
+        }
+        // Second failure — clear port reference so next connect shows the picker
+        // for a fresh handle, then report the error
+        this.port = null;
+        this.dispatchEvent(new CustomEvent("ERROR", { detail: e.message }));
+        return false;
+      }
+    }
+    return false;
   }
 
   /**
