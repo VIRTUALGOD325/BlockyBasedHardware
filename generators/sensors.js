@@ -6,16 +6,16 @@ arduinoGen.forBlock['read_ultrasonic'] = function (block) {
     const trig = block.getFieldValue('TRIG');
     const echo = block.getFieldValue('ECHO');
 
-    arduinoGen.includes_['ultrasonic_func'] = `
-        long readUltrasonic(int trigPin, int echoPin) {
-        digitalWrite(trigPin, HIGH);   
-        delayMicroseconds(10);
-        digitalWrite(trigPin, LOW);
-        long duration = pulseIn(echoPin, HIGH);
-        long distance = 0.017 * duration;
-        return distance;
-        }
-    `;
+    arduinoGen.definitions_['ultrasonic_func'] = `long readUltrasonic(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duration = pulseIn(echoPin, HIGH);
+  long distance = duration * 0.017;
+  return distance;
+}`;
 
     arduinoGen.setupCode_['trig_' + trig] = 'pinMode(' + trig + ', OUTPUT);';
     arduinoGen.setupCode_['echo_' + echo] = 'pinMode(' + echo + ', INPUT);';

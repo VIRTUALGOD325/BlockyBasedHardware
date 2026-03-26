@@ -8,6 +8,7 @@ import {
   LogIn,
   Pencil,
   ArrowLeft,
+  PowerOff,
 } from "lucide-react";
 import { ConnectionStatus, ThemeMode } from "../types";
 import { SerialPortInfo } from "../utils/HardwareConnection";
@@ -205,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Port Selector */}
-          <div className="relative">
+          <div className="relative flex items-center gap-1">
             <button
               onClick={() => {
                 if (serialMode === "webserial") {
@@ -214,16 +215,35 @@ export const Header: React.FC<HeaderProps> = ({
                   setDropdownOpen(!dropdownOpen);
                 }
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors text-gray-600 dark:text-white/70 hover:text-gray-800 dark:hover:text-white/90"
+              disabled={isConnected || isUploading}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors ${
+                isConnected
+                  ? "border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 cursor-default"
+                  : "border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/[0.08] text-gray-600 dark:text-white/70 hover:text-gray-800 dark:hover:text-white/90"
+              }`}
             >
               <Usb className="w-3 h-3" />
               <span className="text-[11px] font-medium">
                 {connectedPort || "Select Port"}
               </span>
-              <ChevronDown
-                className={`w-3 h-3 opacity-40 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
-              />
+              {!isConnected && (
+                <ChevronDown
+                  className={`w-3 h-3 opacity-40 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                />
+              )}
             </button>
+
+            {/* Disconnect button — always visible when connected */}
+            {isConnected && !isUploading && (
+              <button
+                onClick={onDisconnectDevice}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+                title="Disconnect device"
+              >
+                <PowerOff className="w-3 h-3" />
+                <span className="text-[10px] font-semibold">Disconnect</span>
+              </button>
+            )}
 
             {/* Port Dropdown */}
             {dropdownOpen && serialMode === "link" && !isConnected && (

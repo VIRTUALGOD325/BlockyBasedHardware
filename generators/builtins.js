@@ -175,10 +175,18 @@ arduinoGen.forBlock['variables_get'] = function (block) {
     return [varName, Order.ATOMIC];
 };
 
-// variables_set — set a variable
+// variables_set — set a variable (infer type from value)
 arduinoGen.forBlock['variables_set'] = function (block) {
     const varName = arduinoGen.getVariableName(block.getFieldValue('VAR'));
     const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '0';
-    arduinoGen.variables_['var_' + varName] = 'int ' + varName + ';';
+
+    // Infer type: string literals or String() → String, decimal → float, else int
+    let type = 'int';
+    if (value.startsWith('"') || value.startsWith('String(')) {
+        type = 'String';
+    } else if (value.includes('.') && !value.includes('(')) {
+        type = 'float';
+    }
+    arduinoGen.variables_['var_' + varName] = type + ' ' + varName + ';';
     return varName + ' = ' + value + ';\n';
 };

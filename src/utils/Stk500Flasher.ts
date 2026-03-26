@@ -11,8 +11,6 @@ const STK_INSYNC = 0x14;
 const CRC_EOP = 0x20; // End of packet marker
 
 const STK_GET_SYNC = 0x30;
-const STK_GET_PARAMETER = 0x41;
-const STK_SET_DEVICE = 0x42;
 const STK_ENTER_PROGMODE = 0x50;
 const STK_LEAVE_PROGMODE = 0x51;
 const STK_LOAD_ADDRESS = 0x55;
@@ -28,8 +26,10 @@ type OnProgress = (phase: string, percent: number) => void;
 export class Stk500Flasher {
   private port: SerialPort;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private readBuffer: number[] = [];
   private readLoop: Promise<void> | null = null;
+  private dataNotify: (() => void) | null = null;
 
   constructor(port: SerialPort) {
     this.port = port;
@@ -49,6 +49,8 @@ export class Stk500Flasher {
 
       try {
         this.startReading();
+        this.writer = this.port.writable?.getWriter() ?? null;
+        if (!this.writer) throw new Error("Port not writable");
 
         // Reset the board by toggling DTR (enter bootloader)
         await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
@@ -77,6 +79,7 @@ export class Stk500Flasher {
         if (synced) break;
       } finally {
         if (!synced) {
+          this.releaseWriter();
           await this.stopReading();
           if (this.port.readable || this.port.writable) {
             await this.port.close();
@@ -131,6 +134,7 @@ export class Stk500Flasher {
       await this.leaveProgMode();
       onProgress?.("done", 100);
     } finally {
+      this.releaseWriter();
       await this.stopReading();
       if (this.port.readable || this.port.writable) {
         await this.port.close();
@@ -186,12 +190,18 @@ export class Stk500Flasher {
   // ── Low-level I/O ──
 
   private async send(data: number[]): Promise<void> {
-    const writer = this.port.writable?.getWriter();
-    if (!writer) throw new Error("Port not writable");
-    try {
-      await writer.write(new Uint8Array(data));
-    } finally {
-      writer.releaseLock();
+    if (!this.writer) throw new Error("Port not writable");
+    await this.writer.write(new Uint8Array(data));
+  }
+
+  private releaseWriter(): void {
+    if (this.writer) {
+      try {
+        this.writer.releaseLock();
+      } catch {
+        // Ignore
+      }
+      this.writer = null;
     }
   }
 
@@ -204,26 +214,39 @@ export class Stk500Flasher {
     }
   }
 
+  /**
+   * Event-driven byte reader — resolves as soon as data arrives
+   * instead of polling with setTimeout.
+   */
   private readBytes(count: number, timeoutMs: number): Promise<number[]> {
     return new Promise((resolve, reject) => {
-      const deadline = Date.now() + timeoutMs;
+      // Check immediately
+      if (this.readBuffer.length >= count) {
+        resolve(this.readBuffer.splice(0, count));
+        return;
+      }
+
+      let timer: ReturnType<typeof setTimeout> | null = null;
 
       const check = () => {
         if (this.readBuffer.length >= count) {
+          if (timer) clearTimeout(timer);
+          this.dataNotify = null;
           resolve(this.readBuffer.splice(0, count));
-          return;
         }
-        if (Date.now() > deadline) {
-          reject(
-            new Error(
-              `Timeout waiting for ${count} bytes (got ${this.readBuffer.length})`
-            )
-          );
-          return;
-        }
-        setTimeout(check, 5);
       };
-      check();
+
+      timer = setTimeout(() => {
+        this.dataNotify = null;
+        reject(
+          new Error(
+            `Timeout waiting for ${count} bytes (got ${this.readBuffer.length})`
+          )
+        );
+      }, timeoutMs);
+
+      // Set up notification — the read loop calls this when data arrives
+      this.dataNotify = check;
     });
   }
 
@@ -239,6 +262,8 @@ export class Stk500Flasher {
             for (const byte of value) {
               this.readBuffer.push(byte);
             }
+            // Notify any pending readBytes call immediately
+            this.dataNotify?.();
           }
         }
       } catch {
@@ -260,6 +285,7 @@ export class Stk500Flasher {
       await this.readLoop.catch(() => {});
       this.readLoop = null;
     }
+    this.dataNotify = null;
   }
 
   private delay(ms: number): Promise<void> {

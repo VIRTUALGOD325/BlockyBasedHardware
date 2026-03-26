@@ -55,6 +55,7 @@ export const useHardware = () => {
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
   const baudRateRef = useRef<number>(9600);
   const prevLinkConnected = useRef<boolean>(false);
+  const isUploadingRef = useRef<boolean>(false);
 
   // Initialize connections once
   if (!serialConn.current) {
@@ -302,10 +303,9 @@ export const useHardware = () => {
 
     const onDisconnected = () => {
       if (serialMode === "webserial") {
-        setConnectionStatus((prev) => {
-          if (prev === ConnectionStatus.UPLOADING) return prev;
-          return ConnectionStatus.DISCONNECTED;
-        });
+        // Use ref for immediate check — React state may lag behind
+        if (isUploadingRef.current) return;
+        setConnectionStatus(ConnectionStatus.DISCONNECTED);
         setConnectedPort(null);
         addLog("Device disconnected", "info");
       }
@@ -500,20 +500,21 @@ export const useHardware = () => {
   // Helper: reconnect serial after upload with retries
   const reconnectAfterUpload = useCallback(
     async (port: string, isErrorRecovery = false) => {
-      const maxRetries = 3;
-      const baseDelay = isErrorRecovery ? 1000 : 1500;
+      const maxRetries = 4;
+      const baseDelay = isErrorRecovery ? 1000 : 2000;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         addLog(
           `Reconnecting serial monitor${attempt > 1 ? ` (attempt ${attempt}/${maxRetries})` : ""}...`,
           "info",
         );
-        await new Promise((r) => setTimeout(r, baseDelay * attempt));
+        // Longer wait on first attempt to let Arduino bootloader finish and
+        // USB re-enumerate after DTR reset
+        await new Promise((r) => setTimeout(r, baseDelay + (attempt - 1) * 500));
 
         try {
           if (serialMode === "link") {
             if (!linkConn.current?.connected) {
-              // Link WS dropped during upload — wait for reconnect
               addLog("Waiting for Link reconnection...", "info");
               await new Promise((r) => setTimeout(r, 2000));
               if (!linkConn.current?.connected) {
@@ -522,17 +523,25 @@ export const useHardware = () => {
             }
             await linkConn.current.connectPort(port, baudRateRef.current);
           } else {
+            // For WebSerial: the port reference is still held by WebSerialConnection.
+            // Just reopen it — no user gesture needed.
             await serialConn.current?.connect(baudRateRef.current);
           }
           setConnectionStatus(ConnectionStatus.CONNECTED);
+          setConnectedPort(port);
           return;
         } catch (e: any) {
-          if (attempt === maxRetries) {
+          if (attempt < maxRetries) {
+            // On WebSerial, if the port is still busy from the flasher closing,
+            // a short extra wait helps
+            await new Promise((r) => setTimeout(r, 500));
+          } else {
             addLog(
               "Could not reconnect serial. Click Connect Device to retry.",
               "error",
             );
             setConnectionStatus(ConnectionStatus.DISCONNECTED);
+            setConnectedPort(null);
           }
         }
       }
@@ -549,8 +558,10 @@ export const useHardware = () => {
       }
 
       const savedPort = connectedPort;
+      isUploadingRef.current = true;
       setConnectionStatus(ConnectionStatus.UPLOADING);
 
+      try {
       if (isLinkConnected) {
         addLog("EduPrime Link detected → Compiling & uploading...", "info");
 
@@ -740,6 +751,9 @@ export const useHardware = () => {
           "error",
         );
         setConnectionStatus(ConnectionStatus.ERROR);
+      }
+      } finally {
+        isUploadingRef.current = false;
       }
     },
     [connectedPort, isLinkConnected, serialMode, addLog, reconnectAfterUpload],
