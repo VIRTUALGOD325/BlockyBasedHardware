@@ -1,0 +1,48 @@
+name: Release EduPrime Link
+
+on:
+  push:
+    tags:
+      - 'link-v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+        working-directory: eduprime-link
+      - name: Build & publish macOS DMG
+        run: npm run build:mac -- --publish always
+        working-directory: eduprime-link
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+        working-directory: eduprime-link
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild
+        working-directory: eduprime-link
+      - name: Build & publish Windows NSIS installer
+        run: npm run build:win -- --publish always
+        working-directory: eduprime-link
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
