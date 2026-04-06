@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState, KeyboardEvent } from "react";
 import {
-  Terminal,
   Trash2,
   Send,
   ArrowDown,
   Settings,
-  ChevronDown,
+  Clock,
 } from "lucide-react";
 
 export interface SerialLine {
@@ -51,6 +50,7 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTimestamps, setShowTimestamps] = useState(true);
 
   const outputRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -125,10 +125,11 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
                   key={line.id}
                   className="flex items-start group whitespace-pre-wrap"
                 >
-                  {/* Arduino-style: timestamp -> text */}
-                  <span className="text-gray-600 flex-shrink-0 select-none mr-2">
-                    {ts}
-                  </span>
+                  {showTimestamps && (
+                    <span className="text-gray-600 flex-shrink-0 select-none mr-2">
+                      {ts}
+                    </span>
+                  )}
                   <span className="text-gray-600 flex-shrink-0 select-none mr-2">
                     {line.direction === "tx" ? "<-" : "->"}
                   </span>
@@ -187,14 +188,31 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
             Send
           </button>
 
+          {/* Timestamp toggle */}
+          <button
+            onClick={() => setShowTimestamps((v) => !v)}
+            title={showTimestamps ? "Hide timestamps" : "Show timestamps"}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded text-[11px] font-medium transition-colors ${
+              showTimestamps
+                ? "bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300"
+                : "text-gray-400/50 dark:text-gray-600 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            <Clock className={`w-3.5 h-3.5 ${!showTimestamps ? "opacity-40" : ""}`} />
+            <span className="hidden sm:inline">Time</span>
+          </button>
+
+          {/* Clear button */}
           <button
             onClick={onClear}
             title="Clear output"
-            className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 rounded text-[11px] font-medium text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Clear</span>
           </button>
 
+          {/* Settings toggle */}
           <button
             onClick={() => setShowSettings(!showSettings)}
             title="Serial Settings"

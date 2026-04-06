@@ -5,7 +5,7 @@ export default {
         {
             kind: "category",
             name: "Events",
-            colour: "#FFBF00",
+            colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "arduino_start" },
             ]
@@ -18,8 +18,24 @@ export default {
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "forever_loop" },
-                { kind: "block", type: "controls_repeat_ext" },
-                { kind: "block", type: "controls_whileUntil" },
+                {
+                    kind: "block",
+                    type: "controls_repeat_ext",
+                    inputs: {
+                        TIMES: {
+                            shadow: { type: "math_number", fields: { NUM: 10 } }
+                        }
+                    }
+                },
+                {
+                    kind: "block",
+                    type: "controls_whileUntil",
+                    inputs: {
+                        BOOL: {
+                            shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } }
+                        }
+                    }
+                },
                 { kind: "block", type: "controls_if" },
                 { kind: "block", type: "delay_ms" },
                 { kind: "block", type: "delay_us" },
@@ -50,7 +66,7 @@ export default {
         {
             kind: "category",
             name: "Actuators",
-            colour: "#00B4D8",
+            colour: "#9966FF",
             contents: [
                 { kind: "block", type: "set_servo_angle" },
                 { kind: "block", type: "servo_read" },
@@ -133,7 +149,7 @@ export default {
         {
             kind: "category",
             name: "Data",
-            colour: "#8B5CF6",
+            colour: "#9966FF",
             contents: [
                 {
                     kind: "block",

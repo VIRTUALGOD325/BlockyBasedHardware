@@ -11,13 +11,15 @@ arduinoGen.forBlock['set_pin_mode'] = function (block) {
 // Digital Write
 arduinoGen.forBlock['digital_write'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    const value = block.getFieldValue('VALUE')
+    const value = block.getFieldValue('VALUE');
+    arduinoGen.setupCode_['pin_mode_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
     return 'digitalWrite(' + pin + ',' + value + ');\n'
 }
 
 // Digital Read
 arduinoGen.forBlock['digital_read'] = function (block) {
     const pin = block.getFieldValue('PIN');
+    arduinoGen.setupCode_['pin_mode_' + pin] = 'pinMode(' + pin + ', INPUT);';
     return ['digitalRead(' + pin + ')', Order.ATOMIC]
 }
 

@@ -17,7 +17,7 @@ blockly.common.defineBlocksWithJsonArray([
             "min": 0
         }],
         "output": "Number",
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Reads distance from ultrasonic sensor"
     },
     {
@@ -48,7 +48,7 @@ blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Reads temperature or humidity from DHT sensor"
     },
     {
@@ -64,14 +64,14 @@ blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Set up IR receiver on a pin"
     },
     {
         "type": "ir_result_available",
         "message0": "IR result available?",
         "output": "Boolean",
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Returns true if an IR signal has been received and decoded"
     },
     {
@@ -88,7 +88,7 @@ blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": null,
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Returns the decoded IR value in Decimal or Hexadecimal format"
     },
     {
@@ -96,7 +96,7 @@ blockly.common.defineBlocksWithJsonArray([
         "message0": "resume IR receiver",
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Resumes the IR receiver to listen for the next signal"
     },
     {
@@ -132,14 +132,14 @@ blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Returns the key code for a button on the IR remote"
     },
     {
         "type": "timer",
         "message0": "timer",
         "output": "Number",
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Returns the number of seconds since the program started (or since last reset)"
     },
     {
@@ -147,7 +147,7 @@ blockly.common.defineBlocksWithJsonArray([
         "message0": "reset timer",
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#4CBFE6",
+        "colour": "#5CB1D6",
         "tooltip": "Resets the timer to 0"
     }
 ])

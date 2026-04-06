@@ -12,7 +12,7 @@ Blockly.common.defineBlocksWithJsonArray([
             { "type": "input_value", "name": "TO_HIGH" }
         ],
         "output": "Number",
-        "colour": "#8B5CF6",
+        "colour": "#9966FF",
         "tooltip": "Map a value from one range to another"
     },
     {
@@ -24,7 +24,7 @@ Blockly.common.defineBlocksWithJsonArray([
             { "type": "input_value", "name": "MAX" }
         ],
         "output": "Number",
-        "colour": "#8B5CF6",
+        "colour": "#9966FF",
         "tooltip": "Constrain a value between min and max"
     },
     {
@@ -43,7 +43,7 @@ Blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": null,
-        "colour": "#8B5CF6",
+        "colour": "#9966FF",
         "tooltip": "Convert a value to a specific type"
     },
     {
@@ -53,7 +53,7 @@ Blockly.common.defineBlocksWithJsonArray([
             { "type": "input_value", "name": "VALUE" }
         ],
         "output": "String",
-        "colour": "#8B5CF6",
+        "colour": "#9966FF",
         "tooltip": "Convert an ASCII code to a character"
     },
     {
@@ -63,7 +63,7 @@ Blockly.common.defineBlocksWithJsonArray([
             { "type": "input_value", "name": "VALUE" }
         ],
         "output": "Number",
-        "colour": "#8B5CF6",
+        "colour": "#9966FF",
         "tooltip": "Convert a character to its ASCII code"
     }
 ]);

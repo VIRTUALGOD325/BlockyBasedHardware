@@ -45,6 +45,8 @@ export const useHardware = () => {
   const [connectedPort, setConnectedPort] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [serialLines, setSerialLines] = useState<SerialLine[]>([]);
+  // null = not uploading; -1 = indeterminate; 0-100 = STK500 flash progress
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isLinkConnected, setIsLinkConnected] = useState(false);
   const [availablePorts, setAvailablePorts] = useState<SerialPortInfo[]>([]);
 
@@ -560,6 +562,7 @@ export const useHardware = () => {
       const savedPort = connectedPort;
       isUploadingRef.current = true;
       setConnectionStatus(ConnectionStatus.UPLOADING);
+      setUploadProgress(-1); // indeterminate until we get real progress
 
       try {
       if (isLinkConnected) {
@@ -730,9 +733,10 @@ export const useHardware = () => {
           await flasher.flash(binary, (phase, percent) => {
             if (phase === "sync") {
               addLog("Syncing with bootloader...", "info");
-            } else if (phase === "program" && percent % 25 === 0) {
-              addLog(`Flashing... ${percent}%`, "info");
+            } else if (phase === "program") {
+              setUploadProgress(percent);
             } else if (phase === "done") {
+              setUploadProgress(100);
               addLog("Flash complete!", "success");
             }
           });
@@ -754,6 +758,7 @@ export const useHardware = () => {
       }
       } finally {
         isUploadingRef.current = false;
+        setUploadProgress(null);
       }
     },
     [connectedPort, isLinkConnected, serialMode, addLog, reconnectAfterUpload],
@@ -779,5 +784,6 @@ export const useHardware = () => {
     clearSerialLines,
     refreshPorts,
     addLog,
+    uploadProgress,
   };
 };

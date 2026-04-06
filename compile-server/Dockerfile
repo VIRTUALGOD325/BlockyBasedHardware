@@ -15,7 +15,7 @@ RUN apt-get update \
 
 # Pre-install Arduino AVR core + common libraries at build time (faster cold starts)
 RUN arduino-cli core install arduino:avr \
-    && arduino-cli lib install "IRremote@2.6.0" "Servo" "DHT sensor library" "Adafruit NeoPixel"
+    && arduino-cli lib install "IRremote@2.6.0" "Servo"   "DHT sensor library" "Adafruit NeoPixel"
 
 COPY package*.json ./
 RUN npm install --production

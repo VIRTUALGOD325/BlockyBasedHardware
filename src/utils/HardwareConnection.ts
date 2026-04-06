@@ -280,11 +280,19 @@ export class HardwareConnection extends EventTarget {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    // Close any stale socket before retrying
+    // Detach all handlers from the stale socket before closing it.
+    // If we close() without detaching, the async onclose fires after connect()
+    // has already assigned a new socket to this.ws, clobbering it with null.
     if (this.ws) {
-      try { this.ws.close(); } catch { /* ignore */ }
+      const stale = this.ws;
+      stale.onopen = null;
+      stale.onclose = null;
+      stale.onerror = null;
+      stale.onmessage = null;
       this.ws = null;
+      try { stale.close(); } catch { /* ignore */ }
     }
+    this.connected = false;
     this.connect();
   }
 

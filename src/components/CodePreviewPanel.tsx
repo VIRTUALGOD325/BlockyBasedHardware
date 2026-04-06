@@ -122,7 +122,7 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-[#181a1f] bg-gray-50 dark:bg-[#21252b] flex-shrink-0 transition-colors">
         <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200 font-semibold text-sm">
           <Code2 className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-          <span>Arduino C++</span>
+          <span>Arduino C</span>
           <span className="text-[10px] font-mono bg-blue-100 dark:bg-[#16274a] text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
             Auto-updating
           </span>

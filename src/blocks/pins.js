@@ -34,7 +34,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Configure a pin as either an INPUT or OUTPUT"
     },
     {
@@ -59,7 +59,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Set a digital pin HIGH or LOW"
     },
     {
@@ -75,7 +75,7 @@ Blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Read the digital value of a pin (HIGH or LOW)"
     },
     {
@@ -100,7 +100,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Turn an LED on or off on the specified pin"
     },
     {
@@ -114,7 +114,7 @@ Blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Read the value from an analog pin (0-1023)"
     },
     {
@@ -144,7 +144,7 @@ Blockly.common.defineBlocksWithJsonArray([
             }
         ],
         "output": "Number",
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Read a pulse (HIGH or LOW) on a pin"
     },
     {
@@ -168,7 +168,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Write an analog value (PWM wave) to a pin"
     },
     {
@@ -205,7 +205,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Play a tone on a pin"
     },
     {
@@ -229,7 +229,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Write an angle to a servo motor"
     },
     {
@@ -260,7 +260,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Attach an interrupt to a pin (Suspend Pin)"
     },
     {
@@ -277,7 +277,7 @@ Blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#FF6680",
+        "colour": "#4C97FF",
         "tooltip": "Detach an interrupt from a pin"
     }
 ])

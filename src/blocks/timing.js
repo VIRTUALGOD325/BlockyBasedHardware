@@ -13,7 +13,7 @@ blockly.common.defineBlocksWithJsonArray([
         }],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#4C97FF",
+        "colour": "#FFAB19",
         "tooltip": "Delay the program for a specified number of milliseconds"
     },
     {
@@ -28,7 +28,7 @@ blockly.common.defineBlocksWithJsonArray([
         }],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#4C97FF",
+        "colour": "#FFAB19",
         "tooltip": "Delay the program for a specified number of microseconds"
     },
     {

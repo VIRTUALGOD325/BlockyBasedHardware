@@ -78,6 +78,14 @@ export const useProject = () => {
     setHasUnsavedChanges(false);
   }, []);
 
+  const undo = useCallback(() => {
+    workspaceRef.current?.undo(false);
+  }, []);
+
+  const redo = useCallback(() => {
+    workspaceRef.current?.undo(true);
+  }, []);
+
   return {
     projectName,
     setProjectName,
@@ -87,5 +95,7 @@ export const useProject = () => {
     loadFromFile,
     newProject,
     setWorkspace,
+    undo,
+    redo,
   };
 };

@@ -346,7 +346,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               title="Toggle Code View"
             >
-              <span className="font-mono text-xs font-bold">&lt;/&gt;</span>
+              <span className="font-mono text-xs font-bold">&lt;/&gt; Code</span>
             </button>
             <button
               onClick={onToggleSerialMonitor}
@@ -357,7 +357,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               title="Toggle Serial Monitor"
             >
-              <span className="font-mono text-xs font-bold">&gt;_</span>
+              <span className="font-mono text-xs font-bold">Monitor</span>
             </button>
             <button
               onClick={onToggleSettings}

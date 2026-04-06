@@ -5,7 +5,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "arduino_start",
         "message0": "when Arduino Uno starts up",
         "nextStatement": null,
-        "colour": "#FFBF00",
+        "colour": "#FFAB19",
         "tooltip": "The starting point for the Arduino program (setup)",
         "hat": "cap"
     }

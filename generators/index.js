@@ -1,5 +1,4 @@
 import './builtins'
-import './builtins'
 import './pins'
 import './timings'
 import './data'
@@ -8,4 +7,5 @@ import './actuators'
 import './events'
 import './serial'
 import './evive'
-// All generator functions are now registered on arduinoGenerator
+import './procedures'
+// All generator functions are now registered on arduinoGen

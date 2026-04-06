@@ -23,16 +23,19 @@ arduinoGen.forBlock['serial_println'] = function (block) {
 
 // Serial.available()
 arduinoGen.forBlock['serial_available'] = function () {
+    arduinoGen.setupCode_['serial_begin'] = arduinoGen.setupCode_['serial_begin'] || 'Serial.begin(9600);';
     return ['Serial.available()', Order.FUNCTION_CALL];
 }
 
 // Serial.read()
 arduinoGen.forBlock['serial_read'] = function () {
+    arduinoGen.setupCode_['serial_begin'] = arduinoGen.setupCode_['serial_begin'] || 'Serial.begin(9600);';
     return ['Serial.read()', Order.FUNCTION_CALL];
 }
 
 // Serial.readStringUntil(terminator)
 arduinoGen.forBlock['serial_read_string'] = function (block) {
+    arduinoGen.setupCode_['serial_begin'] = arduinoGen.setupCode_['serial_begin'] || 'Serial.begin(9600);';
     const terminator = block.getFieldValue('TERMINATOR');
     return ['Serial.readStringUntil(' + terminator + ')', Order.FUNCTION_CALL];
 }
