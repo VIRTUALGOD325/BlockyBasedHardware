@@ -1,13 +1,26 @@
 import express from 'express';
 import { SerialPort } from 'serialport';
 import { boardManager } from '../utils/boardManager.js';
-
+import { compilerManager } from '../lib/CompilerManager.js';
 import { handleUpload } from '../handlers/uploadHandler.js';
 
 const router = express.Router();
 
 // Upload Route
 router.post('/upload', handleUpload);
+
+// Compile to Intel HEX (for WebSerial browser-side flashing)
+router.post('/compile-hex', async (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'No code provided' });
+    try {
+        await compilerManager.ensureCoreInstalled();
+        const hex = await compilerManager.compileToHex(code);
+        res.json({ hex });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Health check endpoint
 router.get('/health', (req, res) => {

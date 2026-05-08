@@ -99,6 +99,19 @@ class CompilerManager {
         }
     }
 
+    async compileToHex(code) {
+        const sketchDir = await this.compile(code);
+        try {
+            const buildDir = path.join(sketchDir, 'build', 'arduino.avr.uno');
+            const files = await fs.readdir(buildDir);
+            const hexFile = files.find(f => f.endsWith('.hex'));
+            if (!hexFile) throw new Error('No .hex file found after compilation');
+            return await fs.readFile(path.join(buildDir, hexFile), 'utf-8');
+        } finally {
+            await fs.rm(sketchDir, { recursive: true });
+        }
+    }
+
     async compileAndUpload(code, port) {
         // Compile
         const sketchDir = await this.compile(code);
