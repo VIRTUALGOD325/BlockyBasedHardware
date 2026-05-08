@@ -77,10 +77,10 @@ class CompilerManager {
         await fs.writeFile(sketchPath, code);
         console.log(`Saved sketch to: ${sketchPath}`)
 
-        // Compile Code
-        await this.runCommand(`${this.cliPath} compile --fqbn arduino:avr:uno "${tmpDir}"`);
+        // Compile Code — explicit build path so we know where the .hex lands
+        const buildDir = path.join(tmpDir, 'build');
+        await this.runCommand(`${this.cliPath} compile --fqbn arduino:avr:uno --build-path "${buildDir}" "${tmpDir}"`);
 
-        // Uploader INPUT IMPORTANT 
         return tmpDir;
     }
 
@@ -102,9 +102,9 @@ class CompilerManager {
     async compileToHex(code) {
         const sketchDir = await this.compile(code);
         try {
-            const buildDir = path.join(sketchDir, 'build', 'arduino.avr.uno');
+            const buildDir = path.join(sketchDir, 'build');
             const files = await fs.readdir(buildDir);
-            const hexFile = files.find(f => f.endsWith('.hex'));
+            const hexFile = files.find(f => f.endsWith('.hex') && !f.endsWith('.with_bootloader.hex'));
             if (!hexFile) throw new Error('No .hex file found after compilation');
             return await fs.readFile(path.join(buildDir, hexFile), 'utf-8');
         } finally {
