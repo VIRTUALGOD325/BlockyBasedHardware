@@ -9,12 +9,16 @@ import { SerialLine } from "../components/SerialMonitor";
 import { parseIntelHex } from "../utils/IntelHexParser";
 import { Stk500Flasher } from "../utils/Stk500Flasher";
 
-// Link always runs on the user's machine on port 8990 (HTTP + WebSocket).
-// Use localhost for local dev, 127.0.0.1 when accessed from a deployed origin.
-const LINK_HOST =
-  window.location.hostname === "localhost" ? "localhost" : "127.0.0.1";
-const LINK_URL = `http://${LINK_HOST}:8990`;
-const LINK_WS_URL = `ws://${LINK_HOST}:8990`;
+// Link server: on desktop (localhost/127.0.0.1) use local port 8990.
+// On production server, route through nginx proxy at /api/hardware/ and /ws/bridge/.
+const _hostname = window.location.hostname;
+const _isLocal = _hostname === "localhost" || _hostname === "127.0.0.1";
+const LINK_URL = _isLocal
+  ? `http://${_hostname}:8990`
+  : `${window.location.origin}/api/hardware`;
+const LINK_WS_URL = _isLocal
+  ? `ws://${_hostname}:8990`
+  : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/bridge`;
 
 // Cloud compile server URL — set via env var at build time, or falls back to Link
 const COMPILE_SERVER_URL =
