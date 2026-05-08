@@ -70,7 +70,7 @@ class CompilerManager {
     async compile(code) {
         // Temp folder
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "arduino-sketch-"));
-        const sketchPath = path.join(tmpDir, "sketch.ino");
+        const sketchPath = path.join(tmpDir, path.basename(tmpDir) + ".ino");
 
         // Code to file
         // TODO make logic better error handler
