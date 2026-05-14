@@ -151,21 +151,19 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="flex h-[52px] w-full select-none z-[100] relative">
       <div className="flex-1 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/5 relative bg-white dark:bg-[#1a1d27] transition-colors">
-        {/* Left Side: Logo, Nav, Project Name */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={navigateHome}
-              className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white hover:opacity-80 transition-opacity"
-              title="Go to KYNA Home"
-            >
-              <span className="font-semibold text-[17px] tracking-wide font-sans">
-                KYNA
-              </span>
-            </button>
-          </div>
+        {/* Left Side: Logo | Project Dropdown | Project Name */}
+        <div className="flex items-center">
+          <button
+            onClick={navigateHome}
+            className="flex items-center cursor-pointer text-gray-800 dark:text-white hover:opacity-80 transition-opacity mr-4"
+            title="Go to KYNA Home"
+          >
+            <span className="font-semibold text-[17px] tracking-wide font-sans">
+              KYNA
+            </span>
+          </button>
 
-          <span className="text-gray-300 dark:text-white/30 text-xs">•</span>
+          <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mr-4" />
 
           {/* Project Dropdown */}
           <div className="relative" ref={projectMenuRef}>
@@ -204,8 +202,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          <span className="text-gray-200 dark:text-white/20 text-xs">|</span>
-
           {/* <button
             className="p-1 rounded text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
             onClick={() =>
@@ -217,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button> */}
 
           {/* Project Name (editable) + Unsaved Indicator */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 ml-3">
             {isEditingName ? (
               <input
                 ref={nameInputRef}

@@ -77,13 +77,6 @@ export const useHardware = () => {
       const id = Math.random().toString(36).substr(2, 9);
       const timestamp = new Date();
       setLogs((prev) => [...prev, { id, timestamp, type, message }]);
-      // Info and success messages also appear in the serial monitor as system lines
-      if (type !== "error") {
-        setSerialLines((prev) => [
-          ...prev,
-          { id, text: message, direction: "system" as const, timestamp },
-        ]);
-      }
     },
     [],
   );

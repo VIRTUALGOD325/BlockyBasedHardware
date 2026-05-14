@@ -411,7 +411,8 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
           tbEl.style.setProperty('width', `${TOOLBOX_W}px`, 'important');
           tbEl.style.setProperty('max-width', `${TOOLBOX_W}px`, 'important');
           tbEl.style.setProperty('min-width', `${TOOLBOX_W}px`, 'important');
-          tbEl.style.setProperty('border-right', '1px solid rgba(128,128,128,0.2)', 'important');
+          const isDark = document.documentElement.classList.contains('dark');
+          tbEl.style.setProperty('border-right', `1px solid ${isDark ? '#4b5563' : '#9ca3af'}`, 'important');
         }
         // Note: flyout background width is managed by hover-to-reveal handlers
         // and CSS !important — not enforced here to avoid fighting the expansion.
