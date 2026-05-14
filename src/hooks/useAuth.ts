@@ -19,7 +19,7 @@ export interface AuthState {
 const API_BASE =
   window.location.hostname === "localhost"
     ? "http://localhost:5050/api"
-    : "/api";
+    : "/api/scratch/api";
 
 // ── Hook ──
 // TODO: Implement all auth API calls
