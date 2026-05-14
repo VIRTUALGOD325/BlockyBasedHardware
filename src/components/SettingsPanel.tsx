@@ -7,9 +7,6 @@ import {
   Gauge,
   Zap,
   ScrollText,
-  Save,
-  FolderOpen,
-  FilePlus,
   Link,
   Globe,
   Sun,
@@ -31,10 +28,6 @@ interface SettingsPanelProps {
     value: HardwareSettings[K],
   ) => void;
   onResetSettings: () => void;
-  // Project actions
-  onSave: () => void;
-  onLoad: () => void;
-  onNewProject: () => void;
   // Serial mode
   serialMode: "link" | "webserial";
   onSetSerialMode: (mode: "link" | "webserial") => void;
@@ -50,9 +43,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   settings,
   onUpdateSetting,
   onResetSettings,
-  onSave,
-  onLoad,
-  onNewProject,
   serialMode,
   onSetSerialMode,
   isWebSerialSupported,
@@ -118,36 +108,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </button>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* ── Project Section ── */}
-        <section>
-          <h3 className="text-[10px] font-bold text-gray-400 dark:text-white/40 uppercase tracking-[0.15em] mb-3">
-            Project
-          </h3>
-          <div className="space-y-2">
-            <button
-              onClick={onNewProject}
-              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white/90 transition-colors text-[12px] font-medium"
-            >
-              <FilePlus className="w-3.5 h-3.5" />
-              New Project
-            </button>
-            <button
-              onClick={onSave}
-              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white/90 transition-colors text-[12px] font-medium"
-            >
-              <Save className="w-3.5 h-3.5" />
-              Save to File
-            </button>
-            <button
-              onClick={onLoad}
-              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white/90 transition-colors text-[12px] font-medium"
-            >
-              <FolderOpen className="w-3.5 h-3.5" />
-              Open from File
-            </button>
           </div>
         </section>
 
@@ -322,7 +282,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-gray-200 dark:border-white/5 text-[10px] text-gray-400 dark:text-white/30 text-center">
-        EduPrime Hardware v0.1
+        Kynacode Hardware v0.1
       </div>
     </div>
   );

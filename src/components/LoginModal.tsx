@@ -69,7 +69,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <div>
               <h2 className="text-[16px] font-bold text-white">Sign In</h2>
               <p className="text-[11px] text-white/40">
-                Log in to your EduPrime account
+                Log in to your Kynacode account
               </p>
             </div>
           </div>

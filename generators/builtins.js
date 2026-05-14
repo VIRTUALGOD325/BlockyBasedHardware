@@ -160,6 +160,11 @@ arduinoGen.forBlock['controls_whileUntil'] = function (block) {
     return 'while (' + cond + ') {\n' + branch + '}\n';
 };
 
+// break — exit current loop
+arduinoGen.forBlock['break'] = function (_block) {
+    return 'break;\n';
+};
+
 // forever_loop — infinite loop
 arduinoGen.forBlock['forever_loop'] = function (block) {
     const branch = arduinoGen.statementToCode(block, 'DO');

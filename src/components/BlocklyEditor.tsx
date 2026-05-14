@@ -30,6 +30,7 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<any>(null);
   const themesRef = useRef<{ dark: any; light: any } | null>(null);
+  const flyoutRef = useRef<any>(null);
   const onToolboxWidthReadyRef = useRef(onToolboxWidthReady);
   onToolboxWidthReadyRef.current = onToolboxWidthReady;
 
@@ -92,7 +93,7 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         workspaceBackgroundColour: "#F9F9F9",
         toolboxBackgroundColour: "#FFFFFF",
         toolboxForegroundColour: "#575E75",
-        flyoutBackgroundColour: "#F9F9F9",
+        flyoutBackgroundColour: "#e8edf8",
         flyoutOpacity: 1,
         scrollbarColour: "#C1C1C1",
         insertionMarkerColour: "#000000",
@@ -153,7 +154,7 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         workspaceBackgroundColour: "#141620",
         toolboxBackgroundColour: "#11131c",
         toolboxForegroundColour: "#FFFFFF",
-        flyoutBackgroundColour: "#1a1d27",
+        flyoutBackgroundColour: "#1c2235",
         flyoutOpacity: 1,
         scrollbarColour: "#555555",
         insertionMarkerColour: "#FFFFFF",
@@ -201,22 +202,71 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       const toolbox = workspaceRef.current?.getToolbox?.();
       const flyout = toolbox?.getFlyout?.();
       if (flyout) flyout.autoClose = false;
+      flyoutRef.current = flyout ?? null;
 
-      // Lock the flyout workspace's scale to 1.0 so toolbox blocks never
-      // resize when the canvas is zoomed. Blockly stores scale as an own
-      // property on the workspace instance — we replace it with a descriptor
-      // whose getter always returns 1.0 and whose setter is a no-op, so every
-      // internal Blockly path (setScale, translate, reflow…) sees scale = 1.
+      // Lock the flyout workspace's scale to 0.75 so toolbox blocks are
+      // smaller and more compact. Blockly stores scale as an own property
+      // on the workspace instance — we replace it with a descriptor whose
+      // getter always returns 0.75 and whose setter is a no-op, so every
+      // internal Blockly path (setScale, translate, reflow…) sees scale = 0.75.
+      const FLYOUT_SCALE = 0.65;
       const flyoutWs =
         (typeof (flyout as any)?.getWorkspace === 'function'
           ? (flyout as any).getWorkspace()
           : null) ?? (flyout as any)?.workspace_;
       if (flyoutWs) {
         Object.defineProperty(flyoutWs, 'scale', {
-          get: () => 1.0,
-          set: (_v: number) => { /* always 1.0 */ },
+          get: () => FLYOUT_SCALE,
+          set: (_v: number) => { /* always FLYOUT_SCALE */ },
           configurable: true,
         });
+      }
+
+      // Lock the flyout to a fixed width so it never resizes based on content.
+      const FLYOUT_WIDTH = 250;
+      if (flyout) {
+        // Override getWidth so Blockly always sees our fixed flyout width
+        (flyout as any).getWidth = () => FLYOUT_WIDTH;
+
+        // Prevent setWidth from changing the width
+        if (typeof (flyout as any).setWidth === 'function') {
+          (flyout as any).setWidth = (_w: number) => { /* no-op */ };
+        }
+
+        // Override the width_ property so Blockly's internal reflow
+        // always reads our fixed value
+        Object.defineProperty(flyout, 'width_', {
+          get: () => FLYOUT_WIDTH,
+          set: (_v: number) => { /* always fixed */ },
+          configurable: true,
+        });
+
+        // Wrap reflow so the flyout never auto-resizes
+        const origReflow = (flyout as any).reflow?.bind(flyout);
+        if (origReflow) {
+          (flyout as any).reflow = () => {
+            origReflow();
+            // Re-enforce the width on the SVG element after Blockly reflows
+            const flyoutSvg = (flyout as any).svgGroup_?.querySelector?.('rect.blocklyFlyoutBackground') ||
+              (flyout as any).svgBackground_;
+            if (flyoutSvg) {
+              flyoutSvg.setAttribute('width', String(FLYOUT_WIDTH));
+            }
+          };
+        }
+
+        // Wrap position to re-enforce after every Blockly layout pass
+        const origFlyoutPos = (flyout as any).position?.bind(flyout);
+        if (origFlyoutPos) {
+          (flyout as any).position = () => {
+            origFlyoutPos();
+            const flyoutSvg = (flyout as any).svgGroup_?.querySelector?.('rect.blocklyFlyoutBackground') ||
+              (flyout as any).svgBackground_;
+            if (flyoutSvg) {
+              flyoutSvg.setAttribute('width', String(FLYOUT_WIDTH));
+            }
+          };
+        }
       }
 
       // Prevent wheel events over the flyout from propagating to the canvas
@@ -228,15 +278,100 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         }, { passive: false });
       }
 
-      // Measure the category list width — this is fixed after init
-      const toolboxEl = blocklyDiv.current?.querySelector(".blocklyToolboxDiv");
-      const measured =
-        (toolboxEl as HTMLElement | null)?.offsetWidth ||
-        (toolboxEl as HTMLElement | null)?.clientWidth ||
-        0;
-      const toolboxW = measured > 0 ? measured : 120;
-      setDeleteZoneWidth(toolboxW);
-      onToolboxWidthReadyRef.current?.(toolboxW);
+      // Force toolbox category list to a fixed narrow width.
+      // Blockly internally uses toolbox.getWidth() for all layout
+      // calculations and calls toolbox.position() on resize/reflow,
+      // so CSS alone cannot control this. We monkey-patch getWidth()
+      // to always return our desired width, and wrap position() to
+      // re-enforce the DOM element width after every Blockly reflow.
+      const TOOLBOX_WIDTH = 120;
+      if (toolbox) {
+        // Override getWidth so Blockly always sees our fixed width
+        (toolbox as any).getWidth = () => TOOLBOX_WIDTH;
+
+        // Wrap position() to re-apply DOM width after Blockly reflows
+        const origPosition = (toolbox as any).position?.bind(toolbox);
+        if (origPosition) {
+          (toolbox as any).position = () => {
+            origPosition();
+            const el = (toolbox as any).HtmlDiv || (toolbox as any).htmlDiv_ ||
+              blocklyDiv.current?.querySelector(".blocklyToolboxDiv");
+            if (el) {
+              el.style.setProperty('width', `${TOOLBOX_WIDTH}px`, 'important');
+            }
+          };
+        }
+
+        // Apply immediately
+        const toolboxEl = (toolbox as any).HtmlDiv || (toolbox as any).htmlDiv_ ||
+          blocklyDiv.current?.querySelector(".blocklyToolboxDiv");
+        if (toolboxEl) {
+          toolboxEl.style.setProperty('width', `${TOOLBOX_WIDTH}px`, 'important');
+        }
+      }
+      setDeleteZoneWidth(TOOLBOX_WIDTH);
+      onToolboxWidthReadyRef.current?.(TOOLBOX_WIDTH);
+
+      // ── Hover-to-reveal: expand flyout SVG viewport + background on hover ──
+      // The flyout SVG element clips content to its viewport width by default.
+      // We expand both the SVG element width and the background rect on hover
+      // so wide blocks are fully visible. CSS overflow:visible on .blocklyFlyout
+      // handles the actual clip; expanding the SVG width makes the background
+      // and interactive region follow.
+      //
+      // IMPORTANT: We override flyout.getClientRect() to always return the
+      // *logical* (non-expanded) rect. Blockly uses getClientRect() to decide
+      // whether a dropped block should be deleted (i.e. "was it dropped on the
+      // flyout?"). Without this override the expanded 560px SVG width causes
+      // Blockly to treat mid-canvas drops as flyout drops and delete blocks.
+      //
+      // We return a plain object that matches Blockly's Rect interface
+      // (top/bottom/left/right + containsPoint({x,y})). Using a bare DOMRect
+      // would break drags because Blockly calls rect.containsPoint() which
+      // DOMRect does not expose, throwing during drag and leaving blocks stuck.
+      if (flyout && typeof (flyout as any).getClientRect === 'function') {
+        (flyout as any).getClientRect = () => {
+          const toolboxEl =
+            (toolbox as any).HtmlDiv ??
+            (toolbox as any).htmlDiv_ ??
+            blocklyDiv.current?.querySelector('.blocklyToolboxDiv');
+          const tbRect = toolboxEl?.getBoundingClientRect?.() ??
+            { left: 0, right: TOOLBOX_WIDTH, top: 0, bottom: window.innerHeight };
+          const l = tbRect.right;
+          const r = tbRect.right + FLYOUT_WIDTH;
+          const t = tbRect.top;
+          const b = tbRect.bottom;
+          return {
+            left: l, right: r, top: t, bottom: b,
+            // Blockly 12 calls clientRect.contains(clientX, clientY) during drag
+            contains: (x: number, y: number) =>
+              x >= l && x <= r && y >= t && y <= b,
+          };
+        };
+      }
+
+      if (flyoutRoot) {
+        const EXPANDED_WIDTH = 560;
+        const flyoutSvg = flyoutRoot.closest('svg') as SVGSVGElement | null;
+
+        const getBgRect = (): SVGRectElement | null =>
+          flyoutRoot.querySelector('rect.blocklyFlyoutBackground');
+
+        const expand = () => {
+          if (flyoutSvg) flyoutSvg.setAttribute('width', String(EXPANDED_WIDTH));
+          const bg = getBgRect();
+          if (bg) bg.setAttribute('width', String(EXPANDED_WIDTH));
+        };
+
+        const collapse = () => {
+          if (flyoutSvg) flyoutSvg.setAttribute('width', String(FLYOUT_WIDTH));
+          const bg = getBgRect();
+          if (bg) bg.setAttribute('width', String(FLYOUT_WIDTH));
+        };
+
+        flyoutRoot.addEventListener('mouseenter', expand);
+        flyoutRoot.addEventListener('mouseleave', collapse);
+      }
     }, 300);
 
     // Track block drags to show/hide the toolbox delete-zone overlay.
@@ -261,19 +396,29 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
     workspaceRef.current.addChangeListener(dragListener);
 
     // Remove the flyout scrollbar entirely — use MutationObserver
-    // since Blockly may create it asynchronously after inject
+    // since Blockly may create it asynchronously after inject.
+    // Also continuously enforce the toolbox width — Blockly resets
+    // inline styles on resize / reflow events.
     const container = blocklyDiv.current;
     if (container) {
-      const removeScrollbar = () => {
+      const TOOLBOX_W = 120;
+      const enforce = () => {
         container
           .querySelectorAll(".blocklyFlyoutScrollbar")
           .forEach((el) => el.remove());
+        const tbEl = container.querySelector(".blocklyToolboxDiv") as HTMLElement | null;
+        if (tbEl && tbEl.style.width !== `${TOOLBOX_W}px`) {
+          tbEl.style.setProperty('width', `${TOOLBOX_W}px`, 'important');
+          tbEl.style.setProperty('max-width', `${TOOLBOX_W}px`, 'important');
+          tbEl.style.setProperty('min-width', `${TOOLBOX_W}px`, 'important');
+          tbEl.style.setProperty('border-right', '1px solid rgba(128,128,128,0.2)', 'important');
+        }
+        // Note: flyout background width is managed by hover-to-reveal handlers
+        // and CSS !important — not enforced here to avoid fighting the expansion.
       };
-      removeScrollbar();
-      const mo = new MutationObserver(removeScrollbar);
-      mo.observe(container, { childList: true, subtree: true });
-      // Stop observing after a few seconds once DOM has settled
-      setTimeout(() => mo.disconnect(), 3000);
+      enforce();
+      const mo = new MutationObserver(enforce);
+      mo.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
     }
 
     // Observe container size changes and tell Blockly to resize
@@ -308,22 +453,36 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   }, [themeMode]);
 
   // Track pointer position during drag to highlight the toolbox delete zone.
-  // Check liveness against the actual toolbox + flyout DOM elements.
+  // Use flyout.getClientRect() (which we override to the logical fixed width)
+  // so the hover check matches exactly what Blockly uses for deletion detection.
   useEffect(() => {
     if (!isDragging) return;
     const onMove = (e: PointerEvent) => {
       const container = blocklyDiv.current;
       if (!container) return;
 
-      const overEl = (sel: string) => {
-        const el = container.querySelector(sel);
-        if (!el) return false;
-        const r = el.getBoundingClientRect();
-        return e.clientX >= r.left && e.clientX <= r.right &&
-               e.clientY >= r.top  && e.clientY <= r.bottom;
-      };
+      // Toolbox category list — use DOM bounds (it never visually expands)
+      const toolboxEl = container.querySelector('.blocklyToolboxDiv');
+      let overToolbox = false;
+      if (toolboxEl) {
+        const r = toolboxEl.getBoundingClientRect();
+        overToolbox = e.clientX >= r.left && e.clientX <= r.right &&
+                      e.clientY >= r.top  && e.clientY <= r.bottom;
+      }
 
-      setIsHoverDelete(overEl(".blocklyToolboxDiv") || overEl(".blocklyFlyout"));
+      // Flyout — use Blockly's getClientRect() so the boundary matches
+      // exactly what Blockly uses when deciding whether to delete a block.
+      let overFlyout = false;
+      const flyout = flyoutRef.current;
+      if (flyout && typeof flyout.getClientRect === 'function') {
+        try {
+          const r = flyout.getClientRect();
+          overFlyout = e.clientX >= r.left && e.clientX <= r.right &&
+                       e.clientY >= r.top  && e.clientY <= r.bottom;
+        } catch (_) { /* ignore */ }
+      }
+
+      setIsHoverDelete(overToolbox || overFlyout);
     };
     // Capture phase — fires even while Blockly holds pointer capture
     window.addEventListener("pointermove", onMove, true);
@@ -365,8 +524,7 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         style={{ width: "100%", height: "100%" }}
       />
 
-      {/* Toolbox delete-zone overlay — appears while dragging a block.
-          pointer-events:none so it never interferes with Blockly drag handling. */}
+      {/* Toolbox delete-zone overlay — gray during any drag, red when hovering the delete zone. */}
       {isDragging && (
         <div
           className={`absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col items-center justify-center gap-2 transition-colors duration-150 ${

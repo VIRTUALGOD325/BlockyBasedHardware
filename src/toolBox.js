@@ -37,6 +37,7 @@ export default {
                     }
                 },
                 { kind: "block", type: "controls_if" },
+                { kind: "block", type: "break" },
                 { kind: "block", type: "delay_ms" },
                 { kind: "block", type: "delay_us" },
             ]
@@ -48,17 +49,19 @@ export default {
             name: "Pin",
             colour: "#4C97FF",
             contents: [
+                // Stack blocks (rectangular)
                 { kind: "block", type: "set_pin_mode" },
                 { kind: "block", type: "digital_write" },
-                { kind: "block", type: "digital_read" },
                 { kind: "block", type: "analog_write" },
-                { kind: "block", type: "analog_read" },
-                { kind: "block", type: "pulse_in" },
                 { kind: "block", type: "led_control" },
                 { kind: "block", type: "play_tone" },
                 { kind: "block", type: "servo_write" },
                 { kind: "block", type: "suspend_pin" },
                 { kind: "block", type: "do_not_suspend_pin" },
+                // Reporter blocks (rounded/oval)
+                { kind: "block", type: "digital_read" },
+                { kind: "block", type: "analog_read" },
+                { kind: "block", type: "pulse_in" },
             ]
         },
 
@@ -82,15 +85,17 @@ export default {
             name: "Sensor",
             colour: "#5CB1D6",
             contents: [
+                // Stack blocks (rectangular)
+                { kind: "block", type: "read_ir" },
+                { kind: "block", type: "ir_resume" },
+                { kind: "block", type: "reset_timer" },
+                // Reporter blocks (rounded/oval)
                 { kind: "block", type: "read_ultrasonic" },
                 { kind: "block", type: "read_dht" },
-                { kind: "block", type: "read_ir" },
                 { kind: "block", type: "ir_result_available" },
                 { kind: "block", type: "ir_get_value" },
-                { kind: "block", type: "ir_resume" },
                 { kind: "block", type: "ir_key_code" },
                 { kind: "block", type: "timer" },
-                { kind: "block", type: "reset_timer" },
             ]
         },
 
@@ -186,7 +191,7 @@ export default {
         // ─── Evive RGB ───
         {
             kind: "category",
-            name: "Evive RGB",
+            name: "RGB",
             colour: "#FFAB19",
             contents: [
                 { kind: "block", type: "evive_program" },

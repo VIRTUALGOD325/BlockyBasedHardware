@@ -22,7 +22,7 @@ type PendingRequest = {
 };
 
 /**
- * HardwareConnection — WebSocket client for the Eduprime-Link (Electron app).
+ * HardwareConnection — WebSocket client for the Kynacode-Link (Electron app).
  * Handles: port listing, connect/disconnect, compile/upload, serial data.
  */
 export class HardwareConnection extends EventTarget {
@@ -93,7 +93,7 @@ export class HardwareConnection extends EventTarget {
       this.ws = null;
 
       // Reject all pending requests — the connection is gone
-      this.rejectAllPending("Connection to EduPrime-Link lost");
+      this.rejectAllPending("Connection to Kynacode-Link lost");
 
       if (wasConnected) {
         this.dispatchEvent(new CustomEvent("DISCONNECTED"));
@@ -336,7 +336,7 @@ export class HardwareConnection extends EventTarget {
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.connected || !this.ws) {
-        reject(new Error("Not connected to EduPrime-Link"));
+        reject(new Error("Not connected to Kynacode-Link"));
         return;
       }
 

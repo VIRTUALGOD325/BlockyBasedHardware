@@ -131,7 +131,7 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
                     </span>
                   )}
                   <span className="text-gray-600 flex-shrink-0 select-none mr-2">
-                    {line.direction === "tx" ? "<-" : "->"}
+                    {line.direction === "tx" ? "<-" : line.direction === "system" ? " ●" : "->"}
                   </span>
                   <span
                     className={`break-all ${

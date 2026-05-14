@@ -32,6 +32,14 @@ blockly.common.defineBlocksWithJsonArray([
         "tooltip": "Delay the program for a specified number of microseconds"
     },
     {
+        "type": "break",
+        "message0": "break",
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#FFAB19",
+        "tooltip": "Exit the current loop immediately"
+    },
+    {
         "type": "forever_loop",
         "message0": "forever %1",
         "args0": [

@@ -30,10 +30,9 @@ export const useAuth = () => {
 
   const isAuthenticated = user !== null;
 
-  // TODO: On mount, try to restore session via POST /api/auth/refresh
   useEffect(() => {
-    // TODO: Call refreshToken() to check if user has a valid session
-    setIsLoading(false);
+    refreshToken().finally(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 

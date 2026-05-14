@@ -134,13 +134,12 @@ export const Header: React.FC<HeaderProps> = ({
   const isConnected = connectionStatus === ConnectionStatus.CONNECTED;
   const isUploading = connectionStatus === ConnectionStatus.UPLOADING;
 
+  const navigateHome = () => {
+    window.location.href = "https://kynacode.com";
+  };
+
   const navigateToScratch = () => {
-    const hostname = window.location.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      window.location.href = "http://localhost:8601/";
-    } else {
-      window.location.href = "/scratch/";
-    }
+    window.location.href = "/scratch/";
   };
 
   return (
@@ -148,14 +147,24 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex-1 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/5 relative bg-white dark:bg-[#1a1d27] transition-colors">
         {/* Left Side: Logo, Nav, Project Name */}
         <div className="flex items-center gap-3">
-          <div
-            className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white"
-            onClick={navigateToScratch}
-          >
-            <Settings className="w-5 h-5 text-gray-500 dark:text-white/70" />
-            <span className="font-semibold text-[17px] tracking-wide font-sans">
-              EduPrime
-            </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={navigateHome}
+              className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white hover:opacity-80 transition-opacity"
+              title="Go to Kynacode Home"
+            >
+              <span className="font-semibold text-[17px] tracking-wide font-sans">
+                Kynacode
+              </span>
+            </button>
+            <button
+              onClick={navigateToScratch}
+              className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/80 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+              title="Back to Scratch"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Scratch
+            </button>
           </div>
 
           <span className="text-gray-300 dark:text-white/30 text-xs">•</span>
@@ -356,7 +365,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-[11px] text-gray-400 dark:text-white/40 text-center py-4">
                     {isLinkConnected
                       ? "No devices found. Try refreshing."
-                      : "EduPrime Link disconnected."}
+                      : "Kynacode Link disconnected."}
                   </div>
                 )}
               </div>
@@ -370,7 +379,7 @@ export const Header: React.FC<HeaderProps> = ({
                 ? "bg-emerald-400/10"
                 : "bg-gray-100 dark:bg-white/5"
             }`}
-            title={isLinkConnected ? "EduPrime Link connected via USB" : "EduPrime Link offline"}
+            title={isLinkConnected ? "Kynacode Link connected via USB" : "Kynacode Link offline"}
           >
             <span className="text-[9px] text-gray-400 dark:text-white/40 font-medium">Link:</span>
             <span

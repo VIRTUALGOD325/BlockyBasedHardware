@@ -75,7 +75,7 @@ function saveErrorAsPng(log: LogMessage) {
   // Title
   ctx.fillStyle = "#ef4444";
   ctx.font = `bold 13px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-  ctx.fillText("Error Report — EduPrime", PAD, 26);
+  ctx.fillText("Error Report — Kynacode", PAD, 26);
 
   // Timestamp
   ctx.fillStyle = "#6b7280";
@@ -92,14 +92,14 @@ function saveErrorAsPng(log: LogMessage) {
   // Footer watermark
   ctx.fillStyle = "#374151";
   ctx.font = `10px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-  ctx.fillText("EduPrime Hardware", PAD, H - 10);
+  ctx.fillText("Kynacode Hardware", PAD, H - 10);
 
   canvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `eduprime-error-${Date.now()}.png`;
+    a.download = `kynacode-error-${Date.now()}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }, "image/png");
@@ -242,21 +242,17 @@ interface StatusToastProps {
 export const StatusToast: React.FC<StatusToastProps> = ({ logs }) => {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  // Only show the last 5 logs as toasts
-  const candidates = logs.slice(-5);
+  // Only show errors as toasts; info/success are displayed in the serial monitor
+  const candidates = logs.filter((l) => l.type === "error").slice(-3);
   const visible = candidates.filter((l) => !dismissedIds.has(l.id));
 
   const dismiss = useCallback((id: string) => {
     setDismissedIds((prev) => new Set([...prev, id]));
   }, []);
 
-  // Auto-dismiss info / success after 4 s
+  // Auto-dismiss errors after 8 s
   useEffect(() => {
-    const timers = visible
-      .filter((l) => l.type !== "error")
-      .map((l) =>
-        setTimeout(() => dismiss(l.id), 4000)
-      );
+    const timers = visible.map((l) => setTimeout(() => dismiss(l.id), 8000));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logs]);
@@ -276,7 +272,7 @@ export const StatusToast: React.FC<StatusToastProps> = ({ logs }) => {
           100% { width: 0%;   margin-left: 100%; }
         }
       `}</style>
-      <div className="fixed bottom-6 right-4 z-[200] flex flex-col-reverse gap-2 pointer-events-none">
+      <div className="fixed top-[62px] right-4 z-[200] flex flex-col gap-2 pointer-events-none">
         {visible.map((log) => (
           <div key={log.id} className="pointer-events-auto">
             <ToastCard log={log} onDismiss={dismiss} />

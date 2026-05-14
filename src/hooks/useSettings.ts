@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: HardwareSettings = {
   autoScrollConsole: true,
 };
 
-const STORAGE_KEY = "eduprime-hw-settings";
+const STORAGE_KEY = "kynacode-hw-settings";
 
 // ── Hook ──
 // TODO: Implement localStorage read/write logic

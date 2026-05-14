@@ -109,7 +109,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               <span className="text-white font-bold text-lg">E</span>
             </div>
             <span className="text-white font-bold text-2xl tracking-wide">
-              EduPrime
+              Kynacode
             </span>
           </div>
           <p className="text-white/60 text-sm">Hardware Platform</p>
@@ -123,7 +123,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           </h1>
           <p className="text-white/60 text-base max-w-md leading-relaxed">
             Connect your Arduino, drag and drop blocks, and bring your ideas to
-            life with EduPrime's visual programming environment.
+            life with Kynacode's visual programming environment.
           </p>
           <div className="flex items-center gap-6 pt-2">
             <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         </div>
 
         <p className="relative z-10 text-white/30 text-xs">
-          EduPrime Hardware v0.1
+          Kynacode Hardware v0.1
         </p>
       </div>
 
@@ -198,7 +198,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <p className="text-white/40 text-sm">
               {view === "login"
                 ? "Sign in to access your projects and settings"
-                : "Get started with EduPrime Hardware"}
+                : "Get started with Kynacode Hardware"}
             </p>
           </div>
 

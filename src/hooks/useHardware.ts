@@ -74,15 +74,16 @@ export const useHardware = () => {
   // ── Logging Helper ──
   const addLog = useCallback(
     (message: string, type: "info" | "success" | "error" = "info") => {
-      setLogs((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(36).substr(2, 9),
-          timestamp: new Date(),
-          type,
-          message,
-        },
-      ]);
+      const id = Math.random().toString(36).substr(2, 9);
+      const timestamp = new Date();
+      setLogs((prev) => [...prev, { id, timestamp, type, message }]);
+      // Info and success messages also appear in the serial monitor as system lines
+      if (type !== "error") {
+        setSerialLines((prev) => [
+          ...prev,
+          { id, text: message, direction: "system" as const, timestamp },
+        ]);
+      }
     },
     [],
   );
@@ -138,7 +139,7 @@ export const useHardware = () => {
     [flushSerialBuffer],
   );
 
-  // ── Check if EduPrime Link is running ──
+  // ── Check if Kynacode Link is running ──
   useEffect(() => {
     let cancelled = false;
 
@@ -175,7 +176,7 @@ export const useHardware = () => {
           setConnectionStatus(ConnectionStatus.DISCONNECTED);
           setConnectedPort(null);
           addLog(
-            "EduPrime Link disconnected. Device connection lost.",
+            "Kynacode Link disconnected. Device connection lost.",
             "error",
           );
         }
@@ -254,7 +255,7 @@ export const useHardware = () => {
             prev === ConnectionStatus.CONNECTED ||
             prev === ConnectionStatus.ERROR
           ) {
-            addLog("Lost connection to EduPrime Link", "error");
+            addLog("Lost connection to Kynacode Link", "error");
             setConnectedPort(null);
             return ConnectionStatus.DISCONNECTED;
           }
@@ -411,16 +412,16 @@ export const useHardware = () => {
           return;
         }
         if (!isLinkConnected) {
-          addLog("EduPrime Link is not running. Start Link first.", "error");
+          addLog("Kynacode Link is not running. Start Link first.", "error");
           return;
         }
         // If health check passed but WebSocket isn't connected yet, try to connect it
         if (!linkConn.current?.connected) {
-          addLog("Connecting to EduPrime Link...", "info");
+          addLog("Connecting to Kynacode Link...", "info");
           linkConn.current?.retryConnect();
           const connected = await linkConn.current!.waitForConnection(5000);
           if (!connected) {
-            addLog("Could not establish connection to EduPrime Link. Try again.", "error");
+            addLog("Could not establish connection to Kynacode Link. Try again.", "error");
             return;
           }
         }
@@ -570,7 +571,7 @@ export const useHardware = () => {
 
       try {
       if (isLinkConnected) {
-        addLog("EduPrime Link detected → Compiling & uploading...", "info");
+        addLog("Kynacode Link detected → Compiling & uploading...", "info");
 
         try {
           // 1. Release serial port for arduino-cli
@@ -667,7 +668,7 @@ export const useHardware = () => {
           }
           compileEndpoints.push({
             url: `${LINK_URL}/api/compile-hex`,
-            label: "EduPrime Link",
+            label: "Kynacode Link",
           });
 
           let lastError = "";
@@ -720,7 +721,7 @@ export const useHardware = () => {
 
           if (!hexData) {
             addLog(
-              `No compiler available (${lastError}). Either deploy the compile server or run EduPrime Link locally.`,
+              `No compiler available (${lastError}). Either deploy the compile server or run Kynacode Link locally.`,
               "error",
             );
             setConnectionStatus(ConnectionStatus.ERROR);
@@ -755,7 +756,7 @@ export const useHardware = () => {
       } else {
         // Link mode but Link not connected
         addLog(
-          "EduPrime Link is not running. Start the Link app to compile and upload.",
+          "Kynacode Link is not running. Start the Link app to compile and upload.",
           "error",
         );
         setConnectionStatus(ConnectionStatus.ERROR);

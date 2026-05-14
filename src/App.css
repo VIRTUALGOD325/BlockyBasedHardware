@@ -287,14 +287,16 @@
 }
 
 .blocklyToolboxDiv {
-  background: #FFFFFF !important;
-  border-right: 1px solid #E5E5E5 !important;
+  background: #F4F6FA !important;
+  border-right: 2px solid #D0D5E0 !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06) !important;
   padding: var(--space-sm) 0 !important;
 }
 
 .dark .blocklyToolboxDiv {
-  background: #2D2D2D !important;
-  border-right: 1px solid #444444 !important;
+  background: #11131c !important;
+  border-right: 2px solid #2a2f45 !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Scratch-like rounded blocks */
@@ -384,9 +386,38 @@
 
 /* Flyout (block palette) enhancements */
 .blocklyFlyout {
-  background: var(--bg-elevated) !important;
-  border-right: 1px solid var(--border-subtle) !important;
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.2) !important;
+  /* Allow blocks wider than flyout width to overflow (visible on hover) */
+  overflow: visible !important;
+  /* Right-edge shadow to separate flyout from workspace */
+  filter: drop-shadow(3px 0 0 #c5cce0) drop-shadow(6px 0 12px rgba(0,0,0,0.12)) !important;
+}
+
+.dark .blocklyFlyout {
+  filter: drop-shadow(3px 0 0 #2e3550) drop-shadow(6px 0 16px rgba(0,0,0,0.5)) !important;
+}
+
+/* Main workspace SVG also needs overflow visible so flyout blocks
+   can render beyond the flyout's own viewport width */
+svg.blocklyMainWorkspaceSvg,
+.injectionDiv > svg {
+  overflow: visible !important;
+}
+
+/* Flyout background rect — distinct fill via CSS fill override.
+   No width !important so JS hover expansion works freely. */
+.blocklyFlyout rect.blocklyFlyoutBackground {
+  fill: #e8edf8 !important;    /* clearly distinct from white workspace */
+  stroke: none;
+}
+
+.dark .blocklyFlyout rect.blocklyFlyoutBackground {
+  fill: #1c2235 !important;    /* clearly distinct from dark workspace #141620 */
+  stroke: none;
+}
+
+/* Smooth transition when flyout bg expands on block hover */
+.blocklyFlyout rect.blocklyFlyoutBackground {
+  transition: width 0.18s ease;
 }
 
 .blocklyFlyoutButton {
