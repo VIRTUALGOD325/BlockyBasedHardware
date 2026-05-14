@@ -39,22 +39,25 @@ export const useAuth = () => {
 
   const login = useCallback(
     async (email: string, password: string): Promise<boolean> => {
-      // TODO: POST to /api/auth/login with { email, password }
-      const res = await fetch(`${API_BASE}/auth/login`,{
-        method: "POST",
-        headers:{"Content-Type":"application/json"},
-        credentials: "include",
-        body:JSON.stringify({email,password})
-      })
-      // Set user on success, set error on failure
-      const data = await res.json();
-      // Return true/false
-      if (res.ok){
-        setUser(data.user);
-        return true;
+      try {
+        setError(null);
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUser(data.user);
+          return true;
+        }
+        setError(data.error || "Login failed");
+        return false;
+      } catch {
+        setError("Network error. Please try again.");
+        return false;
       }
-      setError(data.error || "Login failed");
-      return false;
     },
     [],
   );

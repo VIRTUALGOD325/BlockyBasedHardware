@@ -4,14 +4,15 @@ import {
   Settings,
   ChevronDown,
   RefreshCw,
-  Play,
+  Upload,
+  Loader2,
   LogIn,
   Pencil,
-  ArrowLeft,
   PowerOff,
   FolderOpen,
   FilePlus,
   Save,
+  Terminal,
 } from "lucide-react";
 import { ConnectionStatus, ThemeMode } from "../types";
 import { SerialPortInfo } from "../utils/HardwareConnection";
@@ -42,6 +43,9 @@ interface HeaderProps {
   // Settings
   isSettingsOpen: boolean;
   onToggleSettings: () => void;
+  // Console
+  isConsoleOpen: boolean;
+  onToggleConsole: () => void;
   // Project
   projectName: string;
   hasUnsavedChanges: boolean;
@@ -75,6 +79,8 @@ export const Header: React.FC<HeaderProps> = ({
   onRefreshPorts,
   isSettingsOpen,
   onToggleSettings,
+  isConsoleOpen,
+  onToggleConsole,
   projectName,
   hasUnsavedChanges,
   onRenameProject,
@@ -151,19 +157,11 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={navigateHome}
               className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white hover:opacity-80 transition-opacity"
-              title="Go to Kynacode Home"
+              title="Go to KYNA Home"
             >
               <span className="font-semibold text-[17px] tracking-wide font-sans">
-                Kynacode
+                KYNA
               </span>
-            </button>
-            <button
-              onClick={navigateToScratch}
-              className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/80 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-              title="Back to Scratch"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              Scratch
             </button>
           </div>
 
@@ -365,7 +363,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-[11px] text-gray-400 dark:text-white/40 text-center py-4">
                     {isLinkConnected
                       ? "No devices found. Try refreshing."
-                      : "Kynacode Link disconnected."}
+                      : "KYNA Link disconnected."}
                   </div>
                 )}
               </div>
@@ -379,7 +377,7 @@ export const Header: React.FC<HeaderProps> = ({
                 ? "bg-emerald-400/10"
                 : "bg-gray-100 dark:bg-white/5"
             }`}
-            title={isLinkConnected ? "Kynacode Link connected via USB" : "Kynacode Link offline"}
+            title={isLinkConnected ? "KYNA Link connected via USB" : "KYNA Link offline"}
           >
             <span className="text-[9px] text-gray-400 dark:text-white/40 font-medium">Link:</span>
             <span
@@ -394,20 +392,23 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 text-gray-700 dark:text-white">
-          {/* Execute Button */}
+          {/* Upload Button */}
           <button
             onClick={onRunCode}
             disabled={!isConnected || isUploading}
-            className={`p-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border text-[11px] font-semibold ${
               isConnected && !isUploading
                 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
                 : "bg-gray-50 dark:bg-white/5 text-gray-400 dark:text-white/60 border-gray-200 dark:border-white/10"
             }`}
-            title="Execute"
+            title="Upload to Board"
           >
-            <Play
-              className={`w-4 h-4 ${isUploading ? "animate-bounce" : ""}`}
-            />
+            {isUploading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Upload className="w-3.5 h-3.5" />
+            )}
+            {isUploading ? "Uploading..." : "Upload"}
           </button>
 
           {/* Tools Group */}
@@ -433,6 +434,17 @@ export const Header: React.FC<HeaderProps> = ({
               title="Toggle Serial Monitor"
             >
               <span className="font-mono text-xs font-bold">Monitor</span>
+            </button>
+            <button
+              onClick={onToggleConsole}
+              className={`px-2 py-1.5 rounded-md transition-all ${
+                isConsoleOpen
+                  ? "bg-gray-200 dark:bg-white/10 text-gray-800 dark:text-white"
+                  : "text-gray-400 dark:text-white/40 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-600 dark:hover:text-white/70"
+              }`}
+              title="Toggle Console"
+            >
+              <span className="font-mono text-xs font-bold">Console</span>
             </button>
             <button
               onClick={onToggleSettings}

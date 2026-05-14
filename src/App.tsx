@@ -6,6 +6,7 @@ import { SerialMonitor } from "./components/SerialMonitor";
 import { CodePreviewPanel } from "./components/CodePreviewPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { AuthPage } from "./components/AuthPage";
+import { ConsoleBar } from "./components/ConsoleBar";
 import { StatusToast, UploadProgressBar } from "./components/StatusToast";
 import { useTheme } from "./hooks/useTheme";
 import { useHardware } from "./hooks/useHardware";
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
 
   // Store generated code for upload and code preview
   const generatedCodeRef = useRef<string>("");
@@ -97,6 +99,9 @@ const App: React.FC = () => {
         // Settings
         isSettingsOpen={isSettingsOpen}
         onToggleSettings={() => setIsSettingsOpen((v) => !v)}
+        // Console
+        isConsoleOpen={isConsoleOpen}
+        onToggleConsole={() => setIsConsoleOpen((v) => !v)}
         // Project
         projectName={projectName}
         hasUnsavedChanges={hasUnsavedChanges}
@@ -113,7 +118,7 @@ const App: React.FC = () => {
       {/* Main Workspace Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Top Area: Blockly + Code Preview + Settings */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Blockly Editor — full width; board panel lives inside as an overlay */}
           <div className="flex-1 relative bg-white dark:bg-[#141620] transition-colors duration-200">
             <BlocklyEditor
@@ -222,6 +227,15 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Bottom Console Panel */}
+        <ConsoleBar
+          logs={logs}
+          isOpen={isConsoleOpen}
+          onClose={() => setIsConsoleOpen(false)}
+          uploadProgress={uploadProgress}
+          connectionStatus={connectionStatus}
+          connectedPort={connectedPort}
+        />
       </main>
 
       {/* Toast notifications */}

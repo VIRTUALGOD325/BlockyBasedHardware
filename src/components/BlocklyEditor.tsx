@@ -524,37 +524,17 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         style={{ width: "100%", height: "100%" }}
       />
 
-      {/* Toolbox delete-zone overlay — gray during any drag, red when hovering the delete zone. */}
-      {isDragging && (
+      {/* Toolbox delete-zone overlay — only visible when dragging over the toolbox area. */}
+      {isDragging && isHoverDelete && (
         <div
-          className={`absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col items-center justify-center gap-2 transition-colors duration-150 ${
-            isHoverDelete
-              ? "bg-red-500/20 border-r-2 border-red-400 dark:border-red-500"
-              : "bg-black/[0.04] dark:bg-white/[0.04] border-r border-dashed border-gray-300/70 dark:border-white/10"
-          }`}
+          className="absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col items-center justify-center gap-2 bg-red-500/20 border-r-2 border-red-400 dark:border-red-500 transition-colors duration-150"
           style={{ left: 0, width: Math.max(deleteZoneWidth, 120) }}
         >
-          <div
-            className={`p-2.5 rounded-full transition-all duration-150 ${
-              isHoverDelete
-                ? "bg-red-500 scale-110 shadow-lg shadow-red-500/30"
-                : "bg-white/90 dark:bg-white/10 shadow-sm"
-            }`}
-          >
-            <Trash2
-              className={`w-5 h-5 transition-colors ${
-                isHoverDelete ? "text-white" : "text-gray-400 dark:text-white/30"
-              }`}
-            />
+          <div className="p-2.5 rounded-full bg-red-500 scale-110 shadow-lg shadow-red-500/30">
+            <Trash2 className="w-5 h-5 text-white" />
           </div>
-          <span
-            className={`text-[11px] font-semibold transition-colors ${
-              isHoverDelete
-                ? "text-red-600 dark:text-red-400 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-full"
-                : "text-gray-300 dark:text-white/20"
-            }`}
-          >
-            {isHoverDelete ? "Release to delete" : "Drop to delete"}
+          <span className="text-[11px] font-semibold text-red-600 dark:text-red-400 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-full">
+            Release to delete
           </span>
         </div>
       )}
