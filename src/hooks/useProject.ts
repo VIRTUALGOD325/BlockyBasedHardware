@@ -57,9 +57,11 @@ export const useProject = () => {
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result as string);
-          if (data.workspace && workspaceRef.current) {
+          // Support both { name, workspace } format and raw Blockly state
+          const workspaceState = data.workspace ?? data;
+          if (workspaceState && workspaceRef.current) {
             workspaceRef.current.clear();
-            Blockly.serialization.workspaces.load(data.workspace, workspaceRef.current);
+            Blockly.serialization.workspaces.load(workspaceState, workspaceRef.current);
             setProjectName(data.name || file.name.replace(".json", ""));
             setCloudProjectId(null);
             setHasUnsavedChanges(false);
