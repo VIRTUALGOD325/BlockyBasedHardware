@@ -12,12 +12,14 @@ import {
   FolderOpen,
   FilePlus,
   Save,
-  Terminal,
+  Cloud,
+  Trash2,
 } from "lucide-react";
 import { ConnectionStatus, ThemeMode } from "../types";
 import { SerialPortInfo } from "../utils/HardwareConnection";
 import { UserMenu } from "./UserMenu";
 import { User } from "../hooks/useAuth";
+import { CloudProject } from "../hooks/useProject";
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -57,6 +59,14 @@ interface HeaderProps {
   user: User | null;
   onLoginClick: () => void;
   onLogout: () => void;
+  // Cloud
+  cloudProjectId: number | null;
+  cloudProjects: CloudProject[];
+  cloudProjectsLoading: boolean;
+  onSaveToCloud: () => void;
+  onFetchCloudProjects: () => void;
+  onLoadCloudProject: (id: number) => void;
+  onDeleteCloudProject: (id: number) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -90,6 +100,13 @@ export const Header: React.FC<HeaderProps> = ({
   user,
   onLoginClick,
   onLogout,
+  cloudProjectId,
+  cloudProjects,
+  cloudProjectsLoading,
+  onSaveToCloud,
+  onFetchCloudProjects,
+  onLoadCloudProject,
+  onDeleteCloudProject,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
@@ -198,6 +215,54 @@ export const Header: React.FC<HeaderProps> = ({
                   <FolderOpen className="w-3.5 h-3.5" />
                   Open from File
                 </button>
+
+                {user && (
+                  <>
+                    <div className="mx-2 my-1 border-t border-gray-100 dark:border-white/10" />
+                    <div className="px-3 py-1">
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/30">Cloud</span>
+                    </div>
+                    <button
+                      onClick={() => { setProjectMenuOpen(false); onSaveToCloud(); }}
+                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-[12px] text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Cloud className="w-3.5 h-3.5 text-indigo-500" />
+                      {cloudProjectId ? "Update Cloud Save" : "Save to Cloud"}
+                    </button>
+                    <button
+                      onClick={() => { onFetchCloudProjects(); }}
+                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-[12px] text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5 text-indigo-500" />
+                      My Cloud Projects {cloudProjects.length > 0 && `(${cloudProjects.length})`}
+                    </button>
+                    {cloudProjectsLoading && (
+                      <div className="px-3 py-1.5 text-[11px] text-gray-400 dark:text-white/40">Loading...</div>
+                    )}
+                    {cloudProjects.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto border-t border-gray-100 dark:border-white/10 mt-1">
+                        {cloudProjects.map(p => (
+                          <div key={p.id} className="flex items-center gap-1 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-white/5 group">
+                            <button
+                              onClick={() => { setProjectMenuOpen(false); onLoadCloudProject(p.id); }}
+                              className="flex-1 text-left text-[11px] text-gray-700 dark:text-white/70 truncate"
+                              title={p.title}
+                            >
+                              {p.title}
+                            </button>
+                            <button
+                              onClick={() => { if (window.confirm(`Delete "${p.title}"?`)) onDeleteCloudProject(p.id); }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-500 transition-opacity"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

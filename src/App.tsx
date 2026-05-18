@@ -43,8 +43,8 @@ const App: React.FC = () => {
   } = useHardware();
 
   const { settings, updateSetting, resetSettings } = useSettings();
-  const { user, isAuthenticated, isLoading: authLoading, error: authError, login, register, logout, clearError } = useAuth();
-  const { projectName, setProjectName, hasUnsavedChanges, markChanged, saveToFile, loadFromFile, newProject, setWorkspace, undo, redo } = useProject();
+  const { user, accessToken, isAuthenticated, isLoading: authLoading, error: authError, login, register, logout, clearError } = useAuth();
+  const { projectName, setProjectName, hasUnsavedChanges, markChanged, saveToFile, loadFromFile, newProject, setWorkspace, undo, redo, cloudProjectId, cloudProjects, cloudProjectsLoading, saveToServer, loadProjectsList, loadProjectById, deleteServerProject } = useProject();
 
   const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(true);
@@ -64,6 +64,43 @@ const App: React.FC = () => {
     setGeneratedCode(code);
     markChanged();
   };
+
+  const handleSaveToCloud = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      await saveToServer(accessToken);
+      addLog("Project saved to cloud.", "success");
+    } catch (e: any) {
+      if (e.code === "PROJECT_LIMIT_REACHED") {
+        addLog("Cloud save failed: 20 project limit reached. Delete a project first.", "error");
+      } else {
+        addLog("Cloud save failed.", "error");
+      }
+    }
+  }, [accessToken, saveToServer, addLog]);
+
+  const handleFetchCloudProjects = useCallback(async () => {
+    if (!accessToken) return;
+    await loadProjectsList(accessToken);
+  }, [accessToken, loadProjectsList]);
+
+  const handleLoadCloudProject = useCallback(async (id: number) => {
+    if (!accessToken) return;
+    try {
+      await loadProjectById(id, accessToken);
+    } catch {
+      addLog("Failed to load cloud project.", "error");
+    }
+  }, [accessToken, loadProjectById, addLog]);
+
+  const handleDeleteCloudProject = useCallback(async (id: number) => {
+    if (!accessToken) return;
+    try {
+      await deleteServerProject(id, accessToken);
+    } catch {
+      addLog("Failed to delete cloud project.", "error");
+    }
+  }, [accessToken, deleteServerProject, addLog]);
 
   // Run Code — one-click: convert blocks → C++ → upload directly
   const handleRunCode = useCallback(() => {
@@ -113,6 +150,14 @@ const App: React.FC = () => {
         user={user}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogout={logout}
+        // Cloud
+        cloudProjectId={cloudProjectId}
+        cloudProjects={cloudProjects}
+        cloudProjectsLoading={cloudProjectsLoading}
+        onSaveToCloud={handleSaveToCloud}
+        onFetchCloudProjects={handleFetchCloudProjects}
+        onLoadCloudProject={handleLoadCloudProject}
+        onDeleteCloudProject={handleDeleteCloudProject}
       />
 
       {/* Main Workspace Area */}
