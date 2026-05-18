@@ -41,6 +41,13 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   // stored in state so the overlay always has a valid size
   const [deleteZoneWidth, setDeleteZoneWidth] = useState(0);
 
+  // Make a Block modal state
+  const [makeBlockModal, setMakeBlockModal] = useState(false);
+  const [makeBlockName, setMakeBlockName] = useState('');
+  const makeBlockWsRef = useRef<any>(null);
+  // Stable ref so the button callback (registered once) always sees current setter
+  const openMakeBlockRef = useRef(() => {});
+
   // Initialize Blockly Workspace (Run Once)
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -193,14 +200,28 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       media: "https://unpkg.com/blockly@12.3.1/media/",
     });
 
-    // Explicitly register PROCEDURE category callback — Blockly's auto-registration
-    // can silently fail in Vite's ESM environment.
-    if (Blockly.Procedures?.internalFlyoutCategory) {
-      workspaceRef.current.registerToolboxCategoryCallback(
-        'PROCEDURE',
-        Blockly.Procedures.internalFlyoutCategory,
-      );
-    }
+    // Scratch-style PROCEDURE flyout: "Make a Block" button + existing call blocks
+    workspaceRef.current.registerToolboxCategoryCallback('PROCEDURE', (ws: any) => {
+      const items: any[] = [
+        { kind: 'button', text: 'Make a Block', callbackKey: 'CREATE_PROCEDURE' },
+      ];
+      try {
+        const [noReturn, withReturn] = Blockly.Procedures.allProcedures(ws);
+        for (const [name, params] of noReturn) {
+          items.push({ kind: 'block', type: 'procedures_callnoreturn', gap: 16, extraState: { name, params } });
+        }
+        for (const [name, params] of withReturn) {
+          items.push({ kind: 'block', type: 'procedures_callreturn', gap: 16, extraState: { name, params } });
+        }
+      } catch {}
+      return items;
+    });
+
+    // "Make a Block" button opens the React modal
+    workspaceRef.current.registerButtonCallback('CREATE_PROCEDURE', (btn: any) => {
+      makeBlockWsRef.current = btn.getTargetWorkspace();
+      openMakeBlockRef.current();
+    });
 
     // Expose workspace to parent
     onWorkspaceReady?.(workspaceRef.current);
@@ -526,6 +547,30 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
     };
   }, [onCodeChange]);
 
+  // Keep the ref current so the button callback (registered once) always triggers latest setter
+  openMakeBlockRef.current = () => { setMakeBlockName(''); setMakeBlockModal(true); };
+
+  const confirmMakeBlock = () => {
+    const ws = makeBlockWsRef.current || workspaceRef.current;
+    if (!ws) return;
+    const name = makeBlockName.trim() || 'do something';
+    const block = ws.newBlock('procedures_defnoreturn');
+    block.setFieldValue(name, 'NAME');
+    block.initSvg();
+    block.render();
+    // Place near top-left of current view
+    try {
+      const metrics = ws.getMetrics?.();
+      if (metrics) {
+        block.moveBy(
+          (metrics.viewLeft + 40) / (ws.scale || 1),
+          (metrics.viewTop + 40) / (ws.scale || 1),
+        );
+      }
+    } catch {}
+    setMakeBlockModal(false);
+  };
+
   return (
     <div className="w-full h-full relative group">
       <div
@@ -546,6 +591,59 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
           <span className="text-[11px] font-semibold text-red-600 dark:text-red-400 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-full">
             Release to delete
           </span>
+        </div>
+      )}
+
+      {/* Make a Block modal */}
+      {makeBlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1d27] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-white/10">
+              <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center mb-3">
+                <svg className="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <h2 className="text-base font-semibold text-white">Make a Block</h2>
+              <p className="text-xs text-white/40 mt-0.5">Define a reusable custom block</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-xs text-white/50 block mb-1.5">Block name</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={makeBlockName}
+                  onChange={e => setMakeBlockName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmMakeBlock(); if (e.key === 'Escape') setMakeBlockModal(false); }}
+                  placeholder="e.g. blink LED"
+                  className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-pink-500/50 transition-colors"
+                />
+              </div>
+              <p className="text-[11px] text-white/30 leading-relaxed">
+                After creating, click the <span className="text-white/50">⚙ gear</span> icon on the block to add inputs and parameters.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-5 flex gap-2 justify-end">
+              <button
+                onClick={() => setMakeBlockModal(false)}
+                className="px-4 py-2 text-sm text-white/50 hover:text-white/80 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmMakeBlock}
+                className="px-4 py-2 text-sm font-medium bg-pink-600 hover:bg-pink-500 text-white rounded-lg transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

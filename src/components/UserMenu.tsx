@@ -66,7 +66,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             {/* Actions */}
             <div className="p-1.5">
               <a
-                href="/api/auth/#/profile"
+                href="/api/auth/#/profile?from=hardware"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-medium text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
