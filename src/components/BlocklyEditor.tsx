@@ -193,6 +193,15 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       media: "https://unpkg.com/blockly@12.3.1/media/",
     });
 
+    // Explicitly register PROCEDURE category callback — Blockly's auto-registration
+    // can silently fail in Vite's ESM environment.
+    if (Blockly.Procedures?.internalFlyoutCategory) {
+      workspaceRef.current.registerToolboxCategoryCallback(
+        'PROCEDURE',
+        Blockly.Procedures.internalFlyoutCategory,
+      );
+    }
+
     // Expose workspace to parent
     onWorkspaceReady?.(workspaceRef.current);
 
