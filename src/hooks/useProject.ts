@@ -46,7 +46,7 @@ export const useProject = () => {
     setHasUnsavedChanges(false);
   }, [projectName]);
 
-  const loadFromFile = useCallback(() => {
+  const loadFromFile = useCallback((onAfterLoad?: () => void) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -63,6 +63,7 @@ export const useProject = () => {
             setProjectName(data.name || file.name.replace(".json", ""));
             setCloudProjectId(null);
             setHasUnsavedChanges(false);
+            onAfterLoad?.();
           }
         } catch (e) {
           console.error("Failed to load the project: ", e);
@@ -127,7 +128,7 @@ export const useProject = () => {
     }
   }, []);
 
-  const loadProjectById = useCallback(async (id: number, accessToken: string): Promise<void> => {
+  const loadProjectById = useCallback(async (id: number, accessToken: string, onAfterLoad?: () => void): Promise<void> => {
     const res = await fetch(`${API_BASE}/projects/${id}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -140,6 +141,7 @@ export const useProject = () => {
       setProjectName(data.project.title);
       setCloudProjectId(id);
       setHasUnsavedChanges(false);
+      onAfterLoad?.();
     }
   }, []);
 

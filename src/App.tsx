@@ -13,6 +13,7 @@ import { useHardware } from "./hooks/useHardware";
 import { useSettings } from "./hooks/useSettings";
 import { useAuth } from "./hooks/useAuth";
 import { useProject } from "./hooks/useProject";
+import { arduinoGen } from "../generators/arduino";
 import {
   Undo2,
   Redo2,
@@ -45,6 +46,17 @@ const App: React.FC = () => {
   const { settings, updateSetting, resetSettings } = useSettings();
   const { user, accessToken, isAuthenticated, isLoading: authLoading, error: authError, login, register, logout, clearError } = useAuth();
   const { projectName, setProjectName, hasUnsavedChanges, markChanged, saveToFile, loadFromFile, newProject, setWorkspace, undo, redo, cloudProjectId, cloudProjects, cloudProjectsLoading, saveToServer, loadProjectsList, loadProjectById, deleteServerProject } = useProject();
+
+  const workspaceRef = useRef<any>(null);
+
+  const forceCodeGen = useCallback(() => {
+    if (!workspaceRef.current) return;
+    try {
+      const code = arduinoGen.workspaceToCode(workspaceRef.current);
+      generatedCodeRef.current = code;
+      setGeneratedCode(code);
+    } catch {}
+  }, []);
 
   const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(true);
@@ -87,11 +99,11 @@ const App: React.FC = () => {
   const handleLoadCloudProject = useCallback(async (id: number) => {
     if (!accessToken) return;
     try {
-      await loadProjectById(id, accessToken);
+      await loadProjectById(id, accessToken, forceCodeGen);
     } catch {
       addLog("Failed to load cloud project.", "error");
     }
-  }, [accessToken, loadProjectById, addLog]);
+  }, [accessToken, loadProjectById, addLog, forceCodeGen]);
 
   const handleDeleteCloudProject = useCallback(async (id: number) => {
     if (!accessToken) return;
@@ -145,7 +157,7 @@ const App: React.FC = () => {
         onRenameProject={setProjectName}
         onNewProject={newProject}
         onSaveProject={saveToFile}
-        onLoadProject={loadFromFile}
+        onLoadProject={() => loadFromFile(forceCodeGen)}
         // Auth
         user={user}
         onLoginClick={() => setIsLoginModalOpen(true)}
@@ -169,7 +181,7 @@ const App: React.FC = () => {
             <BlocklyEditor
               themeMode={theme}
               onCodeChange={handleCodeChange}
-              onWorkspaceReady={setWorkspace}
+              onWorkspaceReady={(ws) => { setWorkspace(ws); workspaceRef.current = ws; }}
               onToolboxWidthReady={setToolboxCatWidth}
             />
 
