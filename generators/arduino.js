@@ -114,5 +114,27 @@ arduinoGen.scrub_ = function (block, code, thisOnly) {
   return code;
 };
 
+// Only generate code from blocks connected to the arduino_start block.
+// Floating blocks are ignored entirely.
+arduinoGen.workspaceToCode = function (workspace) {
+  if (!workspace) return '';
+  this.init(workspace);
+
+  const startBlocks = workspace.getBlocksByType('arduino_start', false);
+  if (startBlocks.length === 0) return this.finish('');
+
+  const nextBlock = startBlocks[0].getNextBlock();
+  if (!nextBlock) return this.finish('');
+
+  const raw = this.blockToCode(nextBlock);
+  const bodyCode = Array.isArray(raw) ? raw[0] : (raw || '');
+
+  let result = this.finish(bodyCode);
+  result = result.replace(/^\s+\n/, '\n');
+  result = result.replace(/\n\n+/g, '\n\n');
+  result = result.replace(/\n*$/, '\n');
+  return result;
+};
+
 export { arduinoGen };
 export { Order };

@@ -42,7 +42,43 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    refreshToken().finally(() => setIsLoading(false));
+    // Capture stored token before refreshToken() can clear it on failure
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+
+    const restore = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          if (data.accessToken) storeToken(data.accessToken);
+          return;
+        }
+      } catch {}
+
+      // Refresh failed — try the stored access token
+      if (storedToken) {
+        try {
+          const res = await fetch(`${API_BASE}/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+            setAccessToken(storedToken);
+            return;
+          }
+        } catch {}
+      }
+
+      clearToken();
+    };
+
+    restore().finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
