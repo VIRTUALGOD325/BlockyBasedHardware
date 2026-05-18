@@ -47,6 +47,16 @@ const App: React.FC = () => {
   const { user, accessToken, isAuthenticated, isLoading: authLoading, error: authError, login, register, logout, clearError } = useAuth();
   const { projectName, setProjectName, hasUnsavedChanges, markChanged, saveToFile, loadFromFile, newProject, setWorkspace, undo, redo, cloudProjectId, cloudProjects, cloudProjectsLoading, saveToServer, loadProjectsList, loadProjectById, deleteServerProject } = useProject();
 
+  const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
+  const [isCodePanelOpen, setIsCodePanelOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
+
+  // Store generated code for upload and code preview
+  const generatedCodeRef = useRef<string>("");
+  const [generatedCode, setGeneratedCode] = useState<string>("");
+
   const workspaceRef = useRef<any>(null);
 
   const forceCodeGen = useCallback(() => {
@@ -57,16 +67,6 @@ const App: React.FC = () => {
       setGeneratedCode(code);
     } catch {}
   }, []);
-
-  const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
-  const [isCodePanelOpen, setIsCodePanelOpen] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
-
-  // Store generated code for upload and code preview
-  const generatedCodeRef = useRef<string>("");
-  const [generatedCode, setGeneratedCode] = useState<string>("");
 
   // Width of Blockly's toolbox category list, measured after init
   const [toolboxCatWidth, setToolboxCatWidth] = useState(0);
