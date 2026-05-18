@@ -19,7 +19,7 @@ const API_BASE =
     ? "http://localhost:5050/api"
     : "/api/scratch/api";
 
-const TOKEN_KEY = "hardwareAuthToken";
+const TOKEN_KEY = "kynaAuthToken";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
