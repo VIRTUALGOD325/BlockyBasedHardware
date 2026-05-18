@@ -114,19 +114,26 @@ arduinoGen.scrub_ = function (block, code, thisOnly) {
   return code;
 };
 
-// Only generate code from blocks connected to the arduino_start block.
-// Floating blocks are ignored entirely.
+// Generate code only from the arduino_start chain (goes into loop()) plus any
+// procedure definition blocks (which are intentionally floating — they go into
+// definitions_ via their own generators). All other floating blocks are ignored.
 arduinoGen.workspaceToCode = function (workspace) {
   if (!workspace) return '';
   this.init(workspace);
 
+  // Process procedure definitions first so they populate definitions_
+  workspace.getTopBlocks(false).forEach((block) => {
+    if (block.type === 'procedures_defnoreturn' || block.type === 'procedures_defreturn') {
+      this.blockToCode(block);
+    }
+  });
+
+  // Build loop() body from arduino_start chain only
   const startBlocks = workspace.getBlocksByType('arduino_start', false);
   if (startBlocks.length === 0) return this.finish('');
 
   const nextBlock = startBlocks[0].getNextBlock();
-  if (!nextBlock) return this.finish('');
-
-  const raw = this.blockToCode(nextBlock);
+  const raw = nextBlock ? this.blockToCode(nextBlock) : '';
   const bodyCode = Array.isArray(raw) ? raw[0] : (raw || '');
 
   let result = this.finish(bodyCode);
