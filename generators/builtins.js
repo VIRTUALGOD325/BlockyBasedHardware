@@ -181,6 +181,15 @@ arduinoGen.forBlock['variables_get'] = function (block) {
     return [varName, Order.ATOMIC];
 };
 
+// math_change — increment a variable by a delta (e.g. count += 1)
+arduinoGen.forBlock['math_change'] = function (block) {
+    const id = block.getFieldValue('VAR');
+    const varName = arduinoGen.getVariableName(id);
+    const delta = arduinoGen.valueToCode(block, 'DELTA', Order.ADDITION) || '1';
+    arduinoGen.variables_['var_' + varName] = 'int ' + varName + ';';
+    return varName + ' += ' + delta + ';\n';
+};
+
 // variables_set — set a variable (infer type from value)
 arduinoGen.forBlock['variables_set'] = function (block) {
     const id = block.getFieldValue('VAR');
