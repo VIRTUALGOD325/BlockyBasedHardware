@@ -39,7 +39,7 @@ Blockly.common.defineBlocksWithJsonArray([
     },
     {
         "type": "digital_write",
-        "message0": "digital write pin %1 to %2",
+        "message0": "set digital pin %1 to %2",
         "args0": [
             {
                 "type": "field_number",
@@ -64,7 +64,7 @@ Blockly.common.defineBlocksWithJsonArray([
     },
     {
         "type": "digital_read",
-        "message0": "digital read pin %1",
+        "message0": "read digital pin %1",
         "args0": [
             {
                 "type": "field_number",
@@ -105,7 +105,7 @@ Blockly.common.defineBlocksWithJsonArray([
     },
     {
         "type": "analog_read",
-        "message0": "analog read pin %1",
+        "message0": "read analog pin %1",
         "args0": [
             {
                 "type": "field_input",

@@ -50,18 +50,16 @@ export default {
             name: "Pin",
             colour: "#4C97FF",
             contents: [
-                // Stack blocks (rectangular)
+                { kind: "block", type: "analog_read" },
+                { kind: "block", type: "digital_read" },
                 { kind: "block", type: "set_pin_mode" },
                 { kind: "block", type: "digital_write" },
                 { kind: "block", type: "analog_write" },
+                { kind: "block", type: "servo_write" },
                 { kind: "block", type: "led_control" },
                 { kind: "block", type: "play_tone" },
-                { kind: "block", type: "servo_write" },
                 { kind: "block", type: "suspend_pin" },
                 { kind: "block", type: "do_not_suspend_pin" },
-                // Reporter blocks (rounded/oval)
-                { kind: "block", type: "digital_read" },
-                { kind: "block", type: "analog_read" },
                 { kind: "block", type: "pulse_in" },
             ]
         },
