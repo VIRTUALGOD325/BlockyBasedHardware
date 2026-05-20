@@ -17,6 +17,12 @@ function persistDismiss(id: number) {
   sessionStorage.setItem(DISMISS_KEY, JSON.stringify([...s]));
 }
 
+function decodeToken(token: string | null): { role?: string } {
+  if (!token) return {};
+  try { return JSON.parse(atob(token.split(".")[1])); }
+  catch { return {}; }
+}
+
 const TYPE_STYLE: Record<string, { bar: string; Icon: any }> = {
   info:    { bar: "bg-blue-600",  Icon: Info },
   warning: { bar: "bg-amber-500", Icon: AlertTriangle },
@@ -27,8 +33,12 @@ export function PlatformBanner() {
   const [maintenance, setMaintenance] = useState<Maintenance>({ enabled: false });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(getDismissed);
+  // Re-read token on each status poll so banner updates after login/logout
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("kynaAuthToken"));
 
   const fetchStatus = useCallback(async () => {
+    // Re-read token each poll cycle
+    setToken(localStorage.getItem("kynaAuthToken"));
     try {
       const res = await fetch(STATUS_URL, { credentials: "include" });
       if (!res.ok) return;
@@ -44,27 +54,28 @@ export function PlatformBanner() {
     return () => clearInterval(id);
   }, [fetchStatus]);
 
+  // Also re-read token immediately when localStorage changes (login / logout)
+  useEffect(() => {
+    const onStorage = () => setToken(localStorage.getItem("kynaAuthToken"));
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const handleDismiss = (id: number) => {
     persistDismiss(id);
     setDismissed(prev => new Set([...prev, id]));
   };
 
-  const token = localStorage.getItem("kynaAuthToken");
-  // Decode role from JWT without a library
-  let isAdmin = false;
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      isAdmin = payload.role === "admin";
-    } catch { /* ignore */ }
-  }
+  const payload = decodeToken(token);
+  const isAuthenticated = !!token;
+  const isAdmin = payload.role === "admin";
 
   const visible = notifications.filter(n => !dismissed.has(n.id));
 
   return (
     <>
-      {/* Maintenance overlay */}
-      {maintenance.enabled && !isAdmin && (
+      {/* Full blocking overlay — only for authenticated non-admin users */}
+      {maintenance.enabled && isAuthenticated && !isAdmin && (
         <div className="fixed inset-0 z-[9999] bg-[#0f1117] flex flex-col items-center justify-center text-center p-8">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center mb-6">
             <Wrench className="w-8 h-8 text-amber-400" />
@@ -84,9 +95,19 @@ export function PlatformBanner() {
         </div>
       )}
 
+      {/* Top banner — for unauthenticated visitors so they can still sign in */}
+      {maintenance.enabled && !isAuthenticated && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-white flex items-center gap-3 px-4 py-3 text-sm">
+          <Wrench className="w-4 h-4 shrink-0" />
+          <span className="flex-1">
+            {maintenance.message || "Platform is under maintenance."} Sign in to continue if you have access.
+          </span>
+        </div>
+      )}
+
       {/* Notification banners */}
-      {visible.length > 0 && (
-        <div className="fixed top-0 left-0 right-0 z-[9998] flex flex-col">
+      {visible.length > 0 && !isAdmin && (
+        <div className="fixed top-0 left-0 right-0 z-[9998] flex flex-col" style={{ top: maintenance.enabled && !isAuthenticated ? "48px" : 0 }}>
           {visible.map(n => {
             const style = TYPE_STYLE[n.type] ?? TYPE_STYLE.info;
             const Icon = style.Icon;
