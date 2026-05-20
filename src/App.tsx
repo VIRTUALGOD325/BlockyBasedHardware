@@ -9,6 +9,7 @@ import { AuthPage } from "./components/AuthPage";
 import { ConsoleBar } from "./components/ConsoleBar";
 import { StatusToast, UploadProgressBar } from "./components/StatusToast";
 import { useTheme } from "./hooks/useTheme";
+import { PlatformBanner } from "./components/PlatformBanner";
 import { useHardware } from "./hooks/useHardware";
 import { useSettings } from "./hooks/useSettings";
 import { useAuth } from "./hooks/useAuth";
@@ -126,6 +127,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-[#0f1117]">
+      <PlatformBanner />
       {/* Top Navigation */}
       <Header
         theme={theme}
