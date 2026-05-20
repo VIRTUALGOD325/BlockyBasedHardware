@@ -9,11 +9,12 @@ import './events';
 import './serial';
 import './evive';
 
+import { Blocks, FieldDropdown } from 'blockly';
+
 // Override logic_compare to accept any type on both sides (Number AND Boolean).
 // Blockly's built-in version enforces type matching once one side is connected,
 // which prevents mixing digital_read (Number) with true/false (Boolean).
-import { Blocks, FieldDropdown } from 'blockly';
-Blockly.Blocks['logic_compare'] = {
+Blocks['logic_compare'] = {
   init: function () {
     this.appendValueInput('A').setCheck(null);
     this.appendDummyInput().appendField(
@@ -36,7 +37,6 @@ Blockly.Blocks['logic_compare'] = {
 // inside a procedures_defnoreturn/procedures_defreturn, which causes code
 // generation to produce nothing. We override onchange to only show a
 // warning (not disable) so the block still generates valid Arduino code.
-import { Blocks } from 'blockly';
 
 const ifReturnDef = Blocks['procedures_ifreturn'];
 if (ifReturnDef) {
