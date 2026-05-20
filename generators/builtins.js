@@ -127,7 +127,7 @@ arduinoGen.forBlock['logic_negate'] = function (block) {
 
 // ─── Control Flow ───────────────────────────────────────────────
 
-// controls_if — if / else if / else
+// controls_if — if / else if / else (legacy, kept for old saved files)
 arduinoGen.forBlock['controls_if'] = function (block) {
     let code = '';
     let n = 0;
@@ -144,15 +144,46 @@ arduinoGen.forBlock['controls_if'] = function (block) {
     return code + '\n';
 };
 
-// controls_repeat_ext — repeat N times
+// arduino_if — simple if, no mutator
+arduinoGen.forBlock['arduino_if'] = function (block) {
+    const cond = arduinoGen.valueToCode(block, 'IF0', Order.NONE) || 'false';
+    const branch = arduinoGen.statementToCode(block, 'DO0');
+    return 'if (' + cond + ') {\n' + branch + '}\n';
+};
+
+// arduino_if_else — if with fixed else branch
+arduinoGen.forBlock['arduino_if_else'] = function (block) {
+    const cond = arduinoGen.valueToCode(block, 'IF0', Order.NONE) || 'false';
+    const branch = arduinoGen.statementToCode(block, 'DO0');
+    const elseBranch = arduinoGen.statementToCode(block, 'ELSE');
+    return 'if (' + cond + ') {\n' + branch + '} else {\n' + elseBranch + '}\n';
+};
+
+// controls_repeat_ext — legacy, kept for old saved files
 arduinoGen.forBlock['controls_repeat_ext'] = function (block) {
     const times = arduinoGen.valueToCode(block, 'TIMES', Order.ASSIGNMENT) || '0';
     const branch = arduinoGen.statementToCode(block, 'DO');
     return 'for (int i = 0; i < ' + times + '; i++) {\n' + branch + '}\n';
 };
 
-// controls_whileUntil — while / until loop
+// arduino_repeat — repeat N times, no "do" label
+arduinoGen.forBlock['arduino_repeat'] = function (block) {
+    const times = arduinoGen.valueToCode(block, 'TIMES', Order.ASSIGNMENT) || '0';
+    const branch = arduinoGen.statementToCode(block, 'DO');
+    return 'for (int i = 0; i < ' + times + '; i++) {\n' + branch + '}\n';
+};
+
+// controls_whileUntil — legacy, kept for old saved files
 arduinoGen.forBlock['controls_whileUntil'] = function (block) {
+    const until = block.getFieldValue('MODE') === 'UNTIL';
+    let cond = arduinoGen.valueToCode(block, 'BOOL', Order.NONE) || 'false';
+    if (until) cond = '!(' + cond + ')';
+    const branch = arduinoGen.statementToCode(block, 'DO');
+    return 'while (' + cond + ') {\n' + branch + '}\n';
+};
+
+// arduino_while_until — repeat while/until, no "do" label
+arduinoGen.forBlock['arduino_while_until'] = function (block) {
     const until = block.getFieldValue('MODE') === 'UNTIL';
     let cond = arduinoGen.valueToCode(block, 'BOOL', Order.NONE) || 'false';
     if (until) cond = '!(' + cond + ')';

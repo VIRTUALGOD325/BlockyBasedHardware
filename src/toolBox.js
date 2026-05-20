@@ -20,7 +20,7 @@ export default {
                 { kind: "block", type: "forever_loop" },
                 {
                     kind: "block",
-                    type: "controls_repeat_ext",
+                    type: "arduino_repeat",
                     inputs: {
                         TIMES: {
                             shadow: { type: "math_number", fields: { NUM: 10 } }
@@ -29,17 +29,18 @@ export default {
                 },
                 {
                     kind: "block",
-                    type: "controls_whileUntil",
+                    type: "arduino_while_until",
                     inputs: {
                         BOOL: {
                             shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } }
                         }
                     }
                 },
-                { kind: "block", type: "controls_if" },
+                { kind: "block", type: "arduino_if" },
+                { kind: "block", type: "arduino_if_else" },
                 { kind: "block", type: "break" },
+                { kind: "block", type: "wait_seconds" },
                 { kind: "block", type: "delay_ms" },
-                { kind: "block", type: "delay_us" },
             ]
         },
 
