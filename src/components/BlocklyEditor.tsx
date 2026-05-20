@@ -9,6 +9,81 @@ import "../blocks";
 import { arduinoGen } from "../../generators/arduino";
 import "../../generators";
 
+interface CustomBlockConfig {
+  name: string;
+  label: string;
+  category: string;
+  color: string;
+  blockJson: object | null;
+  codeTemplate: string;
+  includesCode?: string;
+  setupCode?: string;
+  variablesCode?: string;
+}
+
+interface BlockConfig {
+  builtinEnabled: string[] | "all";
+  custom: CustomBlockConfig[];
+}
+
+function filterToolbox(base: any, config: BlockConfig): any {
+  const enabledSet = config.builtinEnabled === "all" ? null : new Set(config.builtinEnabled as string[]);
+  const filtered = {
+    ...base,
+    contents: base.contents
+      .map((cat: any) => {
+        if (cat.custom) return cat;
+        return {
+          ...cat,
+          contents: enabledSet
+            ? (cat.contents || []).filter((b: any) => enabledSet.has(b.type))
+            : cat.contents,
+        };
+      })
+      .filter((cat: any) => cat.custom || (cat.contents && cat.contents.length > 0)),
+  };
+  // Inject enabled custom blocks into their category (or a new one)
+  for (const block of config.custom) {
+    const existing = filtered.contents.find((c: any) => c.name === block.category);
+    if (existing && existing.contents) {
+      existing.contents.push({ kind: "block", type: block.name });
+    } else {
+      // Insert before Variables
+      const varIdx = filtered.contents.findIndex((c: any) => c.custom === "VARIABLE");
+      const insertAt = varIdx >= 0 ? varIdx : filtered.contents.length - 2;
+      filtered.contents.splice(insertAt, 0, {
+        kind: "category",
+        name: block.category,
+        colour: block.color,
+        contents: [{ kind: "block", type: block.name }],
+      });
+    }
+  }
+  return filtered;
+}
+
+function registerCustomBlock(Blockly: any, block: CustomBlockConfig): void {
+  if (block.blockJson) {
+    Blockly.common.defineBlocksWithJsonArray([block.blockJson]);
+  }
+  arduinoGen.forBlock[block.name] = function (b: any) {
+    let code = block.codeTemplate || "";
+    // Extract all field values and substitute into template
+    b.inputList?.forEach((input: any) => {
+      input.fieldRow?.forEach((field: any) => {
+        if (field.name) {
+          const val = b.getFieldValue(field.name) ?? "";
+          code = code.split(`{${field.name}}`).join(val);
+        }
+      });
+    });
+    if (block.includesCode) arduinoGen.includes_[block.name + "_inc"] = block.includesCode;
+    if (block.variablesCode) arduinoGen.variables_[block.name + "_var"] = block.variablesCode;
+    if (block.setupCode) arduinoGen.setupCode_[block.name + "_setup"] = block.setupCode;
+    return code + "\n";
+  };
+}
+
 // Handle potential default export mismatch from our shim
 // @ts-ignore
 const Blockly = BlocklyFromModule.default || BlocklyFromModule;
@@ -47,6 +122,29 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   const makeBlockWsRef = useRef<any>(null);
   // Stable ref so the button callback (registered once) always sees current setter
   const openMakeBlockRef = useRef(() => {});
+
+  // Block registry config (fetched from scratch-backend)
+  const [blockConfig, setBlockConfig] = useState<BlockConfig | null>(null);
+
+  // Fetch block config from scratch-backend
+  useEffect(() => {
+    const base = (import.meta as any).env?.VITE_SCRATCH_API_URL ?? "/api/scratch/api";
+    fetch(`${base}/blocks`)
+      .then(r => r.json())
+      .then((data: BlockConfig) => setBlockConfig(data))
+      .catch(() => setBlockConfig({ builtinEnabled: "all", custom: [] }));
+  }, []);
+
+  // Apply block config: register custom blocks + update toolbox
+  useEffect(() => {
+    if (!blockConfig || !workspaceRef.current) return;
+    // Register any custom block definitions + generators
+    for (const block of blockConfig.custom) {
+      registerCustomBlock(Blockly, block);
+    }
+    const newToolbox = filterToolbox(BLOCKLY_TOOLBOX, blockConfig);
+    try { workspaceRef.current.updateToolbox(newToolbox); } catch {}
+  }, [blockConfig]);
 
   // Initialize Blockly Workspace (Run Once)
   useEffect(() => {

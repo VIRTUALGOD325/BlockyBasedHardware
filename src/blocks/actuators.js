@@ -105,7 +105,7 @@ blockly.common.defineBlocksWithJsonArray([
         ],
         "previousStatement": null,
         "nextStatement": null,
-        "colour": "#9966FF"
+        "colour": "#FFAB19"
     }
 ]);
 

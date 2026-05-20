@@ -11,9 +11,11 @@ COPY . .
 # Build-time env vars — override at docker build or compose level
 ARG VITE_COMPILE_SERVER_URL=/api/compile
 ARG VITE_BASE_PATH=/
+ARG VITE_SCRATCH_API_URL=/api/scratch/api
 
 ENV VITE_COMPILE_SERVER_URL=$VITE_COMPILE_SERVER_URL
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
+ENV VITE_SCRATCH_API_URL=$VITE_SCRATCH_API_URL
 
 RUN npm run build
 

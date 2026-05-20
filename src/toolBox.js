@@ -79,7 +79,6 @@ export default {
                 { kind: "block", type: "servo_read" },
                 { kind: "block", type: "servo_detach" },
                 { kind: "block", type: "set_motor_speed" },
-                { kind: "block", type: "set_neopixel" },
             ]
         },
 
@@ -268,13 +267,13 @@ export default {
             ]
         },
 
-        // ─── Evive RGB ───
+        // ─── RGB ───
         {
             kind: "category",
             name: "RGB",
             colour: "#FFAB19",
             contents: [
-                { kind: "block", type: "evive_program" },
+                { kind: "block", type: "set_neopixel" },
                 { kind: "block", type: "evive_init_strip" },
                 { kind: "block", type: "evive_set_pixel_colour" },
                 { kind: "block", type: "evive_show_strip" },
