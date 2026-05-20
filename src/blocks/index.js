@@ -9,6 +9,28 @@ import './events';
 import './serial';
 import './evive';
 
+// Override logic_compare to accept any type on both sides (Number AND Boolean).
+// Blockly's built-in version enforces type matching once one side is connected,
+// which prevents mixing digital_read (Number) with true/false (Boolean).
+import { Blocks, FieldDropdown } from 'blockly';
+Blockly.Blocks['logic_compare'] = {
+  init: function () {
+    this.appendValueInput('A').setCheck(null);
+    this.appendDummyInput().appendField(
+      new FieldDropdown([
+        ['=', 'EQ'], ['≠', 'NEQ'],
+        ['<', 'LT'], ['≤', 'LTE'],
+        ['>', 'GT'], ['≥', 'GTE'],
+      ]), 'OP'
+    );
+    this.appendValueInput('B').setCheck(null);
+    this.setInputsInline(true);
+    this.setOutput(true, 'Boolean');
+    this.setColour('#59C059');
+    this.setTooltip('Compare two values');
+  }
+};
+
 // Patch procedures_ifreturn so it works outside procedure definitions.
 // Blockly's built-in onchange handler disables this block when it's not
 // inside a procedures_defnoreturn/procedures_defreturn, which causes code

@@ -70,7 +70,12 @@ export default {
             name: "Actuators",
             colour: "#9966FF",
             contents: [
-                { kind: "block", type: "set_servo_angle" },
+                {
+                    kind: "block", type: "set_servo_angle",
+                    inputs: {
+                        ANGLE: { shadow: { type: "math_number", fields: { NUM: 90 } } }
+                    }
+                },
                 { kind: "block", type: "servo_read" },
                 { kind: "block", type: "servo_detach" },
                 { kind: "block", type: "set_motor_speed" },
@@ -135,15 +140,57 @@ export default {
             name: "Operators",
             colour: "#59C059",
             contents: [
-                { kind: "block", type: "math_arithmetic" },
-                { kind: "block", type: "math_random_int" },
-                { kind: "block", type: "logic_compare" },
-                { kind: "block", type: "logic_operation" },
-                { kind: "block", type: "logic_negate" },
+                {
+                    kind: "block", type: "math_arithmetic",
+                    inputs: {
+                        A: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        B: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "math_random_int",
+                    inputs: {
+                        FROM: { shadow: { type: "math_number", fields: { NUM: 1 } } },
+                        TO:   { shadow: { type: "math_number", fields: { NUM: 10 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "logic_compare",
+                    inputs: {
+                        A: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        B: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "logic_operation",
+                    inputs: {
+                        A: { shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } } },
+                        B: { shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } } }
+                    }
+                },
+                {
+                    kind: "block", type: "logic_negate",
+                    inputs: {
+                        BOOL: { shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } } }
+                    }
+                },
                 { kind: "block", type: "logic_boolean" },
                 { kind: "block", type: "math_number" },
-                { kind: "block", type: "math_modulo" },
-                { kind: "block", type: "math_constrain" },
+                {
+                    kind: "block", type: "math_modulo",
+                    inputs: {
+                        DIVIDEND: { shadow: { type: "math_number", fields: { NUM: 10 } } },
+                        DIVISOR:  { shadow: { type: "math_number", fields: { NUM: 3 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "math_constrain",
+                    inputs: {
+                        VALUE: { shadow: { type: "math_number", fields: { NUM: 50 } } },
+                        LOW:   { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        HIGH:  { shadow: { type: "math_number", fields: { NUM: 100 } } }
+                    }
+                },
                 { kind: "block", type: "text" },
                 { kind: "block", type: "text_join" },
             ]
@@ -155,6 +202,40 @@ export default {
             name: "Data",
             colour: "#9966FF",
             contents: [
+                // Typed variable declarations
+                {
+                    kind: "block", type: "declare_int",
+                    inputs: { VALUE: { shadow: { type: "math_number", fields: { NUM: 0 } } } }
+                },
+                {
+                    kind: "block", type: "declare_float",
+                    inputs: { VALUE: { shadow: { type: "math_number", fields: { NUM: 0.0 } } } }
+                },
+                {
+                    kind: "block", type: "declare_string",
+                    inputs: { VALUE: { shadow: { type: "text", fields: { TEXT: "" } } } }
+                },
+                // Arrays
+                { kind: "block", type: "declare_array_1d" },
+                { kind: "block", type: "declare_array_2d" },
+                {
+                    kind: "block", type: "array_get",
+                    inputs: { INDEX: { shadow: { type: "math_number", fields: { NUM: 0 } } } }
+                },
+                {
+                    kind: "block", type: "array_set",
+                    inputs: {
+                        INDEX: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        VALUE: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "array_get_2d",
+                    inputs: {
+                        ROW: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        COL: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
                 {
                     kind: "block",
                     type: "map_value",

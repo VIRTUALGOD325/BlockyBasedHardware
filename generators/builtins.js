@@ -208,14 +208,14 @@ arduinoGen.forBlock['forever_loop'] = function (block) {
 // variables_get — read a variable
 arduinoGen.forBlock['variables_get'] = function (block) {
     const id = block.getFieldValue('VAR');
-    const varName = arduinoGen.getVariableName(id);
+    const varName = arduinoGen.getVariableName(id, block.workspace);
     return [varName, Order.ATOMIC];
 };
 
 // math_change — increment a variable by a delta (e.g. count += 1)
 arduinoGen.forBlock['math_change'] = function (block) {
     const id = block.getFieldValue('VAR');
-    const varName = arduinoGen.getVariableName(id);
+    const varName = arduinoGen.getVariableName(id, block.workspace);
     const delta = arduinoGen.valueToCode(block, 'DELTA', Order.ADDITION) || '1';
     arduinoGen.variables_['var_' + varName] = 'int ' + varName + ';';
     return varName + ' += ' + delta + ';\n';
@@ -224,7 +224,7 @@ arduinoGen.forBlock['math_change'] = function (block) {
 // variables_set — set a variable (infer type from value)
 arduinoGen.forBlock['variables_set'] = function (block) {
     const id = block.getFieldValue('VAR');
-    const varName = arduinoGen.getVariableName(id);
+    const varName = arduinoGen.getVariableName(id, block.workspace);
     const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '0';
 
     // Infer type: string literals or String() → String, decimal → float, else int

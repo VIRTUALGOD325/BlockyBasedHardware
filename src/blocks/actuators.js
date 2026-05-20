@@ -4,17 +4,11 @@ blockly.common.defineBlocksWithJsonArray([
     {
         "type": "set_servo_angle",
         "message0": "set servo on pin %1 to %2 degrees",
-        "args0": [{
-            "type": "field_number",
-            "name": "PIN",
-            "value": 9
-        }, {
-            "type": "field_number",
-            "name": "ANGLE",
-            "value": 90,
-            "min": 0,
-            "max": 180
-        }],
+        "args0": [
+            { "type": "field_number", "name": "PIN", "value": 9 },
+            { "type": "input_value", "name": "ANGLE", "check": "Number" }
+        ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#9966FF"

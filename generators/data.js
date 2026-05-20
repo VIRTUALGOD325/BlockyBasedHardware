@@ -46,10 +46,68 @@ arduinoGen.forBlock['ascii_char'] = function (block) {
 
 // ASCII Number
 arduinoGen.forBlock['ascii_num'] = function (block) {
-    // For ascii_num, the input is likely a single character string or char
-    // If it's a string block, we might get "\"a\"" or "'a'".
-    // We want to cast it to int.
-    // If usage is like: ascii_num('a') -> (int)'a'
     const value = arduinoGen.valueToCode(block, 'VALUE', Order.ATOMIC) || "' '";
     return ['(int)' + value, Order.ATOMIC];
+};
+
+// ── Typed variable declarations ──────────────────────────────────────────────
+
+arduinoGen.forBlock['declare_int'] = function (block) {
+    const name = block.getFieldValue('VAR') || 'myInt';
+    const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '0';
+    arduinoGen.variables_['var_' + name] = 'int ' + name + ';';
+    return name + ' = ' + value + ';\n';
+};
+
+arduinoGen.forBlock['declare_float'] = function (block) {
+    const name = block.getFieldValue('VAR') || 'myFloat';
+    const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '0.0';
+    arduinoGen.variables_['var_' + name] = 'float ' + name + ';';
+    return name + ' = ' + value + ';\n';
+};
+
+arduinoGen.forBlock['declare_string'] = function (block) {
+    const name = block.getFieldValue('VAR') || 'myStr';
+    const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '""';
+    arduinoGen.variables_['var_' + name] = 'String ' + name + ';';
+    return name + ' = ' + value + ';\n';
+};
+
+// ── Array declarations ───────────────────────────────────────────────────────
+
+arduinoGen.forBlock['declare_array_1d'] = function (block) {
+    const name   = block.getFieldValue('VAR')    || 'myArray';
+    const size   = block.getFieldValue('SIZE')   || '5';
+    const values = block.getFieldValue('VALUES') || '0';
+    arduinoGen.variables_['arr_' + name] = 'int ' + name + '[' + size + '] = {' + values + '};';
+    return '';
+};
+
+arduinoGen.forBlock['declare_array_2d'] = function (block) {
+    const name   = block.getFieldValue('VAR')    || 'myMatrix';
+    const rows   = block.getFieldValue('ROWS')   || '2';
+    const cols   = block.getFieldValue('COLS')   || '3';
+    const values = block.getFieldValue('VALUES') || '{0}';
+    arduinoGen.variables_['arr_' + name] = 'int ' + name + '[' + rows + '][' + cols + '] = {' + values + '};';
+    return '';
+};
+
+arduinoGen.forBlock['array_get'] = function (block) {
+    const name  = block.getFieldValue('VAR') || 'myArray';
+    const index = arduinoGen.valueToCode(block, 'INDEX', Order.ATOMIC) || '0';
+    return [name + '[' + index + ']', Order.ATOMIC];
+};
+
+arduinoGen.forBlock['array_set'] = function (block) {
+    const name  = block.getFieldValue('VAR') || 'myArray';
+    const index = arduinoGen.valueToCode(block, 'INDEX', Order.ATOMIC) || '0';
+    const value = arduinoGen.valueToCode(block, 'VALUE', Order.ASSIGNMENT) || '0';
+    return name + '[' + index + '] = ' + value + ';\n';
+};
+
+arduinoGen.forBlock['array_get_2d'] = function (block) {
+    const name = block.getFieldValue('VAR') || 'myMatrix';
+    const row  = arduinoGen.valueToCode(block, 'ROW', Order.ATOMIC) || '0';
+    const col  = arduinoGen.valueToCode(block, 'COL', Order.ATOMIC) || '0';
+    return [name + '[' + row + '][' + col + ']', Order.ATOMIC];
 };

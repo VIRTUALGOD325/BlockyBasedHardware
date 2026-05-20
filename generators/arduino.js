@@ -46,15 +46,15 @@ arduinoGen.variables_ = {};   // global variable declarations
  * Blockly v12-compatible helper to get a safe variable name from an ID.
  * In v12, generator.getVariableName() does not exist — we must use nameDB_.
  */
-arduinoGen.getVariableName = function (id) {
-  // nameDB_ is created in init(). Guard against it not existing yet.
+arduinoGen.getVariableName = function (id, workspace) {
+  // Look up the human-readable display name from the workspace first.
+  // Without this, nameDB_ would sanitise the raw ID (a UUID-like string)
+  // into a mangled C identifier instead of the name the user typed.
+  const displayName = (workspace && workspace.getVariableById(id)?.name) || id;
   if (this.nameDB_) {
-    // Blockly v12 Names.getName expects (id, prefix)
-    // The prefix 'VARIABLE' ensures collision-free names.
-    return this.nameDB_.getName(id, 'VARIABLE');
+    return this.nameDB_.getName(displayName, 'VARIABLE');
   }
-  // Fallback: if nameDB_ somehow isn't initialised, return the raw id
-  return id;
+  return displayName;
 };
 
 

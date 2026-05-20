@@ -2,7 +2,7 @@ import { arduinoGen, Order } from './arduino';
 
 arduinoGen.forBlock['set_servo_angle'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    const angle = block.getFieldValue('ANGLE');
+    const angle = arduinoGen.valueToCode(block, 'ANGLE', Order.ATOMIC) || '90';
     arduinoGen.includes_['servo_lib'] = '#include <Servo.h>'
     arduinoGen.variables_['servo_' + pin] = 'Servo servo_' + pin + ';'
     arduinoGen.setupCode_['servo_attach_' + pin] = 'servo_' + pin + '.attach(' + pin + ');'

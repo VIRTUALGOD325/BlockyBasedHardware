@@ -569,6 +569,17 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       }
     } catch {}
     setMakeBlockModal(false);
+    // Refresh the My Blocks flyout so the new call block appears immediately
+    try {
+      const toolbox = workspaceRef.current?.getToolbox?.();
+      if (toolbox) {
+        if (typeof (toolbox as any).refreshSelection === 'function') {
+          (toolbox as any).refreshSelection();
+        } else if (typeof (toolbox as any).render === 'function') {
+          (toolbox as any).render((toolbox as any).toolboxDef_);
+        }
+      }
+    } catch {}
   };
 
   return (
