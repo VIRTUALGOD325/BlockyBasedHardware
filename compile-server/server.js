@@ -7,10 +7,20 @@ import os from "os";
 
 const app = express();
 const PORT = process.env.PORT || 3100;
+const ADMIN_KEY = process.env.COMPILE_SERVER_ADMIN_KEY || "";
 
 // Allow all origins (the frontend is on Vercel, Link is on localhost)
 app.use(cors());
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "25mb" }));
+
+// ── Admin key guard ──
+
+function adminGuard(req, res, next) {
+  if (!ADMIN_KEY || req.headers["x-admin-key"] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: "Forbidden" });
+  }
+  next();
+}
 
 // ── Arduino CLI wrapper ──
 
@@ -121,6 +131,52 @@ app.post("/api/compile-hex", async (req, res) => {
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ── Admin library management ──
+
+// Install a library by name from the Arduino Library Manager
+app.post("/admin/install-lib", adminGuard, async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "Missing name" });
+  try {
+    await ensureCore();
+    const output = await run(`${CLI} lib install "${name}"`);
+    res.json({ success: true, output });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// Install a library from a base64-encoded zip
+app.post("/admin/install-lib-zip", adminGuard, async (req, res) => {
+  const { name, zipBase64 } = req.body;
+  if (!zipBase64) return res.status(400).json({ success: false, error: "Missing zipBase64" });
+  let tmpFile;
+  try {
+    await ensureCore();
+    const buf = Buffer.from(zipBase64, "base64");
+    tmpFile = path.join(os.tmpdir(), `kyna-lib-${Date.now()}.zip`);
+    await fs.writeFile(tmpFile, buf);
+    const output = await run(`${CLI} lib install --zip-path "${tmpFile}"`);
+    res.json({ success: true, output });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  } finally {
+    if (tmpFile) await fs.unlink(tmpFile).catch(() => {});
+  }
+});
+
+// Uninstall a library by name
+app.delete("/admin/uninstall-lib", adminGuard, async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "Missing name" });
+  try {
+    const output = await run(`${CLI} lib uninstall "${name}"`);
+    res.json({ success: true, output });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
