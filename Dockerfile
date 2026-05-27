@@ -26,7 +26,7 @@ RUN printf 'server {\n\
     root /usr/share/nginx/html;\n\
     index index.html;\n\
     location /hardware/ {\n\
-        try_files $uri $uri/ /hardware/index.html;\n\
+        try_files $uri $uri/ /index.html;\n\
     }\n\
     location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|wasm)$ {\n\
         expires 1y;\n\
