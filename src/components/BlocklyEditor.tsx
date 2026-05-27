@@ -288,11 +288,16 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       },
       zoom: {
         controls: true,
-        wheel: true,
+        wheel: false,
         startScale: 1.0,
         maxScale: 3,
         minScale: 0.3,
         scaleSpeed: 1.2,
+      },
+      move: {
+        scrollbars: true,
+        drag: true,
+        wheel: true,
       },
       trashcan: true,
       media: "https://unpkg.com/blockly@12.3.1/media/",
@@ -546,8 +551,10 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
         // and CSS !important — not enforced here to avoid fighting the expansion.
       };
       enforce();
+      // Only watch the toolbox div itself — not the whole canvas — to avoid firing on every block move
       const mo = new MutationObserver(enforce);
-      mo.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+      const tbTarget = container.querySelector('.blocklyToolboxDiv') || container;
+      mo.observe(tbTarget, { attributes: true, attributeFilter: ['style'] });
     }
 
     // Observe container size changes and tell Blockly to resize
@@ -622,7 +629,15 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   useEffect(() => {
     if (!workspaceRef.current) return;
 
-    const onWorkspaceChange = () => {
+    // Events that don't affect generated code — skip to avoid unnecessary work
+    const SKIP_EVENTS = new Set([
+      'viewport_change', 'click', 'selected', 'theme_change',
+      'toolbox_item_select', 'var_rename', 'ui',
+    ]);
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const generateCode = () => {
       try {
         const code = arduinoGen.workspaceToCode(workspaceRef.current);
         onCodeChange(code ?? "");
@@ -631,16 +646,21 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       }
     };
 
-    // Generate initial code
-    onWorkspaceChange();
+    const onWorkspaceChange = (e: any) => {
+      if (e && SKIP_EVENTS.has(e.type)) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(generateCode, 250);
+    };
 
-    // Attach listener
-    const listenerPromise =
-      workspaceRef.current.addChangeListener(onWorkspaceChange);
+    // Generate initial code immediately
+    generateCode();
+
+    const listenerKey = workspaceRef.current.addChangeListener(onWorkspaceChange);
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       if (workspaceRef.current) {
-        workspaceRef.current.removeChangeListener(listenerPromise);
+        workspaceRef.current.removeChangeListener(listenerKey);
       }
     };
   }, [onCodeChange]);

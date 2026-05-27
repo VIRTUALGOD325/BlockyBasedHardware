@@ -50,7 +50,7 @@ arduinoGen.forBlock['pulse_in'] = function (block) {
 // Analog Write (PWM)
 arduinoGen.forBlock['analog_write'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    const value = block.getFieldValue('VALUE');
+    const value = arduinoGen.valueToCode(block, 'VALUE', Order.ATOMIC) || '0';
     arduinoGen.setupCode_['pin_mode_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
     return 'analogWrite(' + pin + ', ' + value + ');\n';
 };
@@ -59,7 +59,7 @@ arduinoGen.forBlock['analog_write'] = function (block) {
 arduinoGen.forBlock['play_tone'] = function (block) {
     const pin = block.getFieldValue('PIN');
     const note = block.getFieldValue('NOTE');
-    const duration = block.getFieldValue('DURATION');
+    const duration = arduinoGen.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
     arduinoGen.setupCode_['pin_mode_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
     return 'tone(' + pin + ', ' + note + ', ' + duration + ');\n';
 };
@@ -67,7 +67,7 @@ arduinoGen.forBlock['play_tone'] = function (block) {
 // Servo Write
 arduinoGen.forBlock['servo_write'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    const angle = block.getFieldValue('ANGLE');
+    const angle = arduinoGen.valueToCode(block, 'ANGLE', Order.ATOMIC) || block.getFieldValue('ANGLE') || '90';
     const servoName = 'servo_' + pin;
 
     arduinoGen.includes_['include_servo'] = '#include <Servo.h>';

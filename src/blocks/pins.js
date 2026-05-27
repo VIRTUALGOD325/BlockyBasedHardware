@@ -158,14 +158,9 @@ Blockly.common.defineBlocksWithJsonArray([
                 "min": 0,
                 "max": 53
             },
-            {
-                "type": "field_number",
-                "name": "VALUE",
-                "value": 0,
-                "min": 0,
-                "max": 255
-            }
+            { "type": "input_value", "name": "VALUE" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -196,13 +191,9 @@ Blockly.common.defineBlocksWithJsonArray([
                     ["C5 (523 Hz)", "523"]
                 ]
             },
-            {
-                "type": "field_number",
-                "name": "DURATION",
-                "value": 1000,
-                "min": 0
-            }
+            { "type": "input_value", "name": "DURATION" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -219,14 +210,9 @@ Blockly.common.defineBlocksWithJsonArray([
                 "min": 0,
                 "max": 53
             },
-            {
-                "type": "field_number",
-                "name": "ANGLE",
-                "value": 90,
-                "min": 0,
-                "max": 180
-            }
+            { "type": "input_value", "name": "ANGLE" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",

@@ -30,17 +30,17 @@ arduinoGen.forBlock['set_motor_speed'] = function (block) {
     const en = block.getFieldValue('EN');
     const in1 = block.getFieldValue('IN1');
     const in2 = block.getFieldValue('IN2');
-    const spd = block.getFieldValue('SPEED');
+    const spd = arduinoGen.valueToCode(block, 'SPEED', Order.ATOMIC) || '0';
     arduinoGen.setupCode_['motor_pins_' + en] = 'pinMode(' + en + ', OUTPUT);\npinMode(' + in1 + ', OUTPUT);\npinMode(' + in2 + ', OUTPUT);'
     return 'digitalWrite(' + in1 + ', HIGH);\n' + 'digitalWrite(' + in2 + ', LOW);\n' + 'analogWrite(' + en + ', ' + spd + ');\n';
 }
 
 arduinoGen.forBlock['set_neopixel'] = function (block) {
     const pin = block.getFieldValue('PIN');
-    const index = block.getFieldValue('LED');
-    const r = block.getFieldValue('R');
-    const g = block.getFieldValue('G');
-    const b = block.getFieldValue('B');
+    const index = arduinoGen.valueToCode(block, 'LED', Order.ATOMIC) || '0';
+    const r = arduinoGen.valueToCode(block, 'R', Order.ATOMIC) || '0';
+    const g = arduinoGen.valueToCode(block, 'G', Order.ATOMIC) || '0';
+    const b = arduinoGen.valueToCode(block, 'B', Order.ATOMIC) || '0';
 
     arduinoGen.includes_['neo_lib'] = '#include <Adafruit_NeoPixel.h>'
     arduinoGen.variables_['strip'] = 'Adafruit_NeoPixel strip(30, ' + pin + ', NEO_GRB + NEO_KHZ800);'

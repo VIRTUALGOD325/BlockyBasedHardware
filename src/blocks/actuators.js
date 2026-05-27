@@ -6,7 +6,7 @@ blockly.common.defineBlocksWithJsonArray([
         "message0": "set servo on pin %1 to %2 degrees",
         "args0": [
             { "type": "field_number", "name": "PIN", "value": 9 },
-            { "type": "input_value", "name": "ANGLE", "check": "Number" }
+            { "type": "input_value", "name": "ANGLE" }
         ],
         "inputsInline": true,
         "previousStatement": null,
@@ -55,18 +55,12 @@ blockly.common.defineBlocksWithJsonArray([
                 "name": "IN2",
                 "value": 7
             },
-            {
-                "type": "field_number",
-                "name": "SPEED",
-                "value": 200,
-                "min": 0,
-                "max": 255
-            }
+            { "type": "input_value", "name": "SPEED" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#9966FF"
-
     },
     {
         "type": "set_neopixel",
@@ -76,33 +70,12 @@ blockly.common.defineBlocksWithJsonArray([
             "name": "PIN",
             "value": 6
         },
-        {
-            "type": "field_number",
-            "name": "LED",
-            "value": 0
-        },
-        {
-            "type": "field_number",
-            "name": "R",
-            "value": 255,
-            "min": 0,
-            "max": 255
-        },
-        {
-            "type": "field_number",
-            "name": "G",
-            "value": 0,
-            "min": 0,
-            "max": 255
-        },
-        {
-            "type": "field_number",
-            "name": "B",
-            "value": 0,
-            "min": 0,
-            "max": 255
-        }
+        { "type": "input_value", "name": "LED" },
+        { "type": "input_value", "name": "R" },
+        { "type": "input_value", "name": "G" },
+        { "type": "input_value", "name": "B" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#FFAB19"
