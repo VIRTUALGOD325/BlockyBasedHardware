@@ -18,15 +18,16 @@ RUN npm run build
 # ── Stage 2: Serve ──────────────────────────────────────────
 FROM nginx:alpine
 
-COPY --from=builder /apps/dist /usr/share/nginx/html
+# Place dist inside a hardware/ subdir so /hardware/assets/... paths resolve correctly
+COPY --from=builder /apps/dist /usr/share/nginx/html/hardware
 
-# SPA on port 5173; paths under /hardware/ fall back to index.html
+# SPA on port 5173; all /hardware/* paths fall back to index.html
 RUN printf 'server {\n\
     listen 5173;\n\
     root /usr/share/nginx/html;\n\
     index index.html;\n\
     location /hardware/ {\n\
-        try_files $uri $uri/ /index.html;\n\
+        try_files $uri $uri/ /hardware/index.html;\n\
     }\n\
     location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|wasm)$ {\n\
         expires 1y;\n\
