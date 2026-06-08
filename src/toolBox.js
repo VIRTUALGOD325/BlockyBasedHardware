@@ -36,6 +36,15 @@ export default {
                         }
                     }
                 },
+                {
+                    kind: "block",
+                    type: "wait_until",
+                    inputs: {
+                        BOOL: {
+                            shadow: { type: "logic_boolean", fields: { BOOL: "TRUE" } }
+                        }
+                    }
+                },
                 { kind: "block", type: "arduino_if" },
                 { kind: "block", type: "arduino_if_else" },
                 { kind: "block", type: "break" },
@@ -50,17 +59,72 @@ export default {
             name: "Pin",
             colour: "#4C97FF",
             contents: [
-                { kind: "block", type: "analog_read" },
-                { kind: "block", type: "digital_read" },
-                { kind: "block", type: "set_pin_mode" },
-                { kind: "block", type: "digital_write" },
-                { kind: "block", type: "analog_write" },
-                { kind: "block", type: "servo_write" },
-                { kind: "block", type: "led_control" },
-                { kind: "block", type: "play_tone" },
-                { kind: "block", type: "suspend_pin" },
-                { kind: "block", type: "do_not_suspend_pin" },
-                { kind: "block", type: "pulse_in" },
+                {
+                    kind: "block", type: "analog_read"
+                },
+                {
+                    kind: "block", type: "digital_read",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 2 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "set_pin_mode",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 13 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "digital_write",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 13 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "analog_write",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 5 } } },
+                        VALUE: { shadow: { type: "math_number", fields: { NUM: 128 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "servo_write",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 9 } } },
+                        ANGLE: { shadow: { type: "math_number", fields: { NUM: 90 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "led_control",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 13 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "play_tone",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 9 } } },
+                        DURATION: { shadow: { type: "math_number", fields: { NUM: 1000 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "suspend_pin",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 2 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "do_not_suspend_pin",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 2 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "pulse_in",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 13 } } }
+                    }
+                },
             ]
         },
 
@@ -73,12 +137,31 @@ export default {
                 {
                     kind: "block", type: "set_servo_angle",
                     inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 9 } } },
                         ANGLE: { shadow: { type: "math_number", fields: { NUM: 90 } } }
                     }
                 },
-                { kind: "block", type: "servo_read" },
-                { kind: "block", type: "servo_detach" },
-                { kind: "block", type: "set_motor_speed" },
+                {
+                    kind: "block", type: "servo_read",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 9 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "servo_detach",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 9 } } }
+                    }
+                },
+                {
+                    kind: "block", type: "set_motor_speed",
+                    inputs: {
+                        EN: { shadow: { type: "math_number", fields: { NUM: 5 } } },
+                        IN1: { shadow: { type: "math_number", fields: { NUM: 6 } } },
+                        IN2: { shadow: { type: "math_number", fields: { NUM: 7 } } },
+                        SPEED: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
             ]
         },
 
@@ -273,7 +356,16 @@ export default {
             name: "RGB",
             colour: "#FFAB19",
             contents: [
-                { kind: "block", type: "set_neopixel" },
+                {
+                    kind: "block", type: "set_neopixel",
+                    inputs: {
+                        PIN: { shadow: { type: "math_number", fields: { NUM: 6 } } },
+                        LED: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        R: { shadow: { type: "math_number", fields: { NUM: 255 } } },
+                        G: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        B: { shadow: { type: "math_number", fields: { NUM: 0 } } }
+                    }
+                },
                 { kind: "block", type: "evive_init_strip" },
                 { kind: "block", type: "evive_set_pixel_colour" },
                 { kind: "block", type: "evive_show_strip" },

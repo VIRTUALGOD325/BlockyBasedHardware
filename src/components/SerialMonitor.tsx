@@ -5,6 +5,7 @@ import {
   ArrowDown,
   Settings,
   Clock,
+  ChevronsDown,
 } from "lucide-react";
 
 export interface SerialLine {
@@ -186,6 +187,20 @@ export const SerialMonitor: React.FC<SerialMonitorProps> = ({
           >
             <Send className="w-3.5 h-3.5" />
             Send
+          </button>
+
+          {/* Auto-scroll toggle */}
+          <button
+            onClick={() => { setAutoScroll((v) => !v); if (!autoScroll) scrollToBottom(); }}
+            title={autoScroll ? "Auto-scroll on (click to disable)" : "Auto-scroll off (click to enable)"}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded text-[11px] font-medium transition-colors ${
+              autoScroll
+                ? "bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300"
+                : "text-gray-400/50 dark:text-gray-600 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            <ChevronsDown className={`w-3.5 h-3.5 ${!autoScroll ? "opacity-40" : ""}`} />
+            <span className="hidden sm:inline">Scroll</span>
           </button>
 
           {/* Timestamp toggle */}

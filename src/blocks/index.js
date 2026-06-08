@@ -32,6 +32,18 @@ Blocks['logic_compare'] = {
   }
 };
 
+// Patch variables_set so its VALUE input accepts any type (number, boolean, etc.)
+// Without this, Blockly can silently restrict the input type based on context.
+const varSetDef = Blocks['variables_set'];
+if (varSetDef) {
+  const origVarSetInit = varSetDef.init;
+  varSetDef.init = function () {
+    if (origVarSetInit) origVarSetInit.call(this);
+    const valueInput = this.getInput('VALUE');
+    if (valueInput) valueInput.setCheck(null);
+  };
+}
+
 // Patch procedures_ifreturn so it works outside procedure definitions.
 // Blockly's built-in onchange handler disables this block when it's not
 // inside a procedures_defnoreturn/procedures_defreturn, which causes code

@@ -1,27 +1,10 @@
-// //Pins to ADD:
-// //Read Digital PIN (INput) Def-9
-// // Read Analog PIN (A) Def-0
-// // Read pulse Pin def-13 timeout 2000
-// // set digital pin def-9 output as Options High/Low 
-// // Set PWM def-5 output 0-255 
-// // play pin def-9 with note Options def-C4 for duration def-1
-// set servo pin def-9 to angle def-90
-// Repeat Block suspend pin def-9 mode Options Rising end
-// donot suspend pin options 0-9 Def-2 
-
 import * as Blockly from 'blockly';
 Blockly.common.defineBlocksWithJsonArray([
     {
         "type": "set_pin_mode",
         "message0": "set pin %1 as %2",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 13,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "MODE",
@@ -32,6 +15,7 @@ Blockly.common.defineBlocksWithJsonArray([
                 ]
             }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -41,13 +25,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "digital_write",
         "message0": "set digital pin %1 to %2",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 13,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "VALUE",
@@ -57,6 +35,7 @@ Blockly.common.defineBlocksWithJsonArray([
                 ]
             }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -66,14 +45,9 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "digital_read",
         "message0": "read digital pin %1",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 2,
-                "min": 0,
-                "max": 53
-            }
+            { "type": "input_value", "name": "PIN" }
         ],
+        "inputsInline": true,
         "output": "Number",
         "colour": "#4C97FF",
         "tooltip": "Read the digital value of a pin (HIGH or LOW)"
@@ -82,13 +56,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "led_control",
         "message0": "set LED on pin %1 %2",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 13,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "STATE",
@@ -98,6 +66,7 @@ Blockly.common.defineBlocksWithJsonArray([
                 ]
             }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -121,13 +90,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "pulse_in",
         "message0": "read pulse from pin %1 value %2 timeout %3",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 13,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "VALUE",
@@ -143,6 +106,7 @@ Blockly.common.defineBlocksWithJsonArray([
                 "min": 0
             }
         ],
+        "inputsInline": true,
         "output": "Number",
         "colour": "#4C97FF",
         "tooltip": "Read a pulse (HIGH or LOW) on a pin"
@@ -151,13 +115,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "analog_write",
         "message0": "set PWM pin %1 to %2",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 5,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             { "type": "input_value", "name": "VALUE" }
         ],
         "inputsInline": true,
@@ -170,13 +128,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "play_tone",
         "message0": "play tone on pin %1 note %2 duration %3",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 9,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "NOTE",
@@ -203,13 +155,7 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "servo_write",
         "message0": "set servo pin %1 to angle %2",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 9,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             { "type": "input_value", "name": "ANGLE" }
         ],
         "inputsInline": true,
@@ -219,17 +165,10 @@ Blockly.common.defineBlocksWithJsonArray([
         "tooltip": "Write an angle to a servo motor"
     },
     {
-
         "type": "suspend_pin",
         "message0": "suspend pin %1 mode %2 %3",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 2,
-                "min": 0,
-                "max": 53
-            },
+            { "type": "input_value", "name": "PIN" },
             {
                 "type": "field_dropdown",
                 "name": "MODE",
@@ -244,6 +183,7 @@ Blockly.common.defineBlocksWithJsonArray([
                 "name": "DO"
             }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
@@ -253,24 +193,12 @@ Blockly.common.defineBlocksWithJsonArray([
         "type": "do_not_suspend_pin",
         "message0": "do not suspend pin %1",
         "args0": [
-            {
-                "type": "field_number",
-                "name": "PIN",
-                "value": 2,
-                "min": 0,
-                "max": 53
-            }
+            { "type": "input_value", "name": "PIN" }
         ],
+        "inputsInline": true,
         "previousStatement": null,
         "nextStatement": null,
         "colour": "#4C97FF",
         "tooltip": "Detach an interrupt from a pin"
     }
 ])
-
-
-
-
-
-
-

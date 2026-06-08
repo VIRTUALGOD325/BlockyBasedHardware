@@ -15,6 +15,12 @@ arduinoGen.forBlock['delay_us'] = function (block) {
     return 'delayMicroseconds(' + us + ');\n';
 };
 
+// wait until condition — polls every 10 ms
+arduinoGen.forBlock['wait_until'] = function (block) {
+    const condition = arduinoGen.valueToCode(block, 'BOOL', arduinoGen.ORDER_NONE || 0) || 'false';
+    return 'while (!(' + condition + ')) { delay(10); }\n';
+};
+
 // wait seconds — decimal seconds (0.5 = 500 ms, 0.001 = 1 ms)
 arduinoGen.forBlock['wait_seconds'] = function (block) {
     const secs = parseFloat(block.getFieldValue('TIME')) || 0;

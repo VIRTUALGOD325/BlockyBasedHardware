@@ -123,6 +123,20 @@ blockly.common.defineBlocksWithJsonArray([
         "tooltip": "Wait for a number of microseconds"
     },
 
+    // ── wait_until: polls condition every 10 ms ──────────────────────────
+    {
+        "type": "wait_until",
+        "message0": "wait until %1",
+        "args0": [
+            { "type": "input_value", "name": "BOOL", "check": "Boolean" }
+        ],
+        "inputsInline": true,
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#FFAB19",
+        "tooltip": "Wait until the condition becomes true (checks every 10 ms)"
+    },
+
     // ── break ────────────────────────────────────────────────────────────
     {
         "type": "break",

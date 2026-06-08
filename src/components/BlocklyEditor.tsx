@@ -629,10 +629,12 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
   useEffect(() => {
     if (!workspaceRef.current) return;
 
-    // Events that don't affect generated code — skip to avoid unnecessary work
+    // Events that don't affect generated code — skip to avoid unnecessary work.
+    // 'move' fires on every pixel of a drag; skip it and let the final
+    // create/delete/change events trigger generation instead.
     const SKIP_EVENTS = new Set([
       'viewport_change', 'click', 'selected', 'theme_change',
-      'toolbox_item_select', 'var_rename', 'ui',
+      'toolbox_item_select', 'var_rename', 'ui', 'move',
     ]);
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
