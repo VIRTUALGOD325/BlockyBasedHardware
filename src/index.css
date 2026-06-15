@@ -282,18 +282,34 @@ html.dark body {
 }
 
 /* Comment bubbles keep their yellow background in both themes, so the text
-   inside must stay dark — otherwise body's dark-theme color cascades in and
-   the text becomes invisible on the yellow background. Note: scratchCommentText
-   is an SVG <text> element (needs fill), the others are HTML textareas. */
+   inside must stay dark. Two things make this hard:
+   1) Tailwind's preflight sets `textarea { color: inherit }`, so the
+      textarea picks up the dark-mode body color (light) → invisible.
+   2) Blockly's dark theme applies `.blocklyText { fill: #fff }` to SVG
+      text inside comments, which also makes the title bar text invisible.
+   Force every textarea inside a comment foreignObject and any blockly/scratch
+   comment text (SVG) to a dark color, regardless of theme. */
+.blocklyCommentForeignObject textarea,
+.scratchCommentForeignObject textarea,
+.scratchCommentBody textarea,
+.blocklyMinimalBody textarea,
 .scratchCommentTextarea,
 .blocklyCommentTextarea {
   color: #1e293b !important;
 }
+.blocklyCommentForeignObject textarea::placeholder,
+.scratchCommentForeignObject textarea::placeholder,
 .scratchCommentTextarea::placeholder,
 .blocklyCommentTextarea::placeholder {
   color: rgba(0, 0, 0, 0.5) !important;
 }
-.scratchCommentText {
+/* SVG comment text — override Blockly's dark-theme white fill. */
+.scratchCommentText,
+.scratchCommentForeignObject text,
+.blocklyCommentForeignObject text,
+.scratch-dark-theme .scratchCommentText,
+.scratch-dark-theme .scratchCommentForeignObject text,
+.zelos-renderer .scratchCommentText {
   fill: #1e293b !important;
 }
 
