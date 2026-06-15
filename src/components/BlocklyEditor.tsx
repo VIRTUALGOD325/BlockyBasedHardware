@@ -88,6 +88,10 @@ function registerCustomBlock(Blockly: any, block: CustomBlockConfig): void {
 // @ts-ignore
 const Blockly = BlocklyFromModule.default || BlocklyFromModule;
 
+// localStorage key for the workspace autosave. Bumped if the saved shape
+// changes incompatibly.
+const AUTOSAVE_KEY = "kyna_hw_autosave_v1";
+
 interface BlocklyEditorProps {
   themeMode: "light" | "dark";
   onCodeChange: (code: string) => void;
@@ -325,6 +329,23 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       makeBlockWsRef.current = btn.getTargetWorkspace();
       openMakeBlockRef.current();
     });
+
+    // ── Autosave restore ─────────────────────────────────────────────────
+    // Browsers can discard background tabs to reclaim memory, which causes a
+    // hard refresh on return and wipes the workspace. Persist serialized
+    // workspace state to localStorage on every change and restore it here so
+    // students never lose work to a tab switch.
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.workspace) {
+          Blockly.serialization.workspaces.load(parsed.workspace, workspaceRef.current);
+        }
+      }
+    } catch (e) {
+      console.warn("[BlocklyEditor] Autosave restore failed:", e);
+    }
 
     // Expose workspace to parent
     onWorkspaceReady?.(workspaceRef.current);
@@ -638,6 +659,7 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
     ]);
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
     const generateCode = () => {
       try {
@@ -648,10 +670,25 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
       }
     };
 
+    const persistAutosave = () => {
+      try {
+        const state = Blockly.serialization.workspaces.save(workspaceRef.current);
+        localStorage.setItem(
+          AUTOSAVE_KEY,
+          JSON.stringify({ workspace: state, ts: Date.now() }),
+        );
+      } catch (e) {
+        console.warn("[BlocklyEditor] Autosave failed:", e);
+      }
+    };
+
     const onWorkspaceChange = (e: any) => {
       if (e && SKIP_EVENTS.has(e.type)) return;
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(generateCode, 250);
+      // Autosave on its own (longer) debounce — we don't need to write on every keystroke
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(persistAutosave, 800);
     };
 
     // Generate initial code immediately
@@ -659,8 +696,24 @@ export const BlocklyEditor: React.FC<BlocklyEditorProps> = ({
 
     const listenerKey = workspaceRef.current.addChangeListener(onWorkspaceChange);
 
+    // Flush autosave on tab hide / page unload so nothing is lost when the
+    // browser discards the tab.
+    const flushOnHide = () => {
+      if (autosaveTimer) {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+      }
+      persistAutosave();
+    };
+    const onVisibility = () => { if (document.visibilityState === "hidden") flushOnHide(); };
+    window.addEventListener("pagehide", flushOnHide);
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      window.removeEventListener("pagehide", flushOnHide);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (workspaceRef.current) {
         workspaceRef.current.removeChangeListener(listenerKey);
       }
