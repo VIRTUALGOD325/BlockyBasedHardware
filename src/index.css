@@ -281,6 +281,19 @@ html.dark body {
   background-color: #ef4444 !important; /* Red */
 }
 
+/* Comment bubbles keep their yellow background in both themes, so the text
+   inside must stay dark — otherwise body's dark-theme color cascades in and
+   the text becomes invisible on the yellow background. */
+.scratchCommentText,
+.scratchCommentTextarea,
+.blocklyCommentTextarea {
+  color: #1e293b !important;
+}
+.scratchCommentTextarea::placeholder,
+.blocklyCommentTextarea::placeholder {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
 /* Workspace styling */
 .blocklySvg {
   background-color: #f8fafc !important;
