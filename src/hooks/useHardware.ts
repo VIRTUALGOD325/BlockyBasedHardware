@@ -49,6 +49,13 @@ export const useHardware = () => {
   const [connectedPort, setConnectedPort] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [serialLines, setSerialLines] = useState<SerialLine[]>([]);
+  // Cap the serial-line history. SerialMonitor renders every entry via .map(),
+  // so an unbounded array (chatty Serial.println loop, etc.) causes the UI to
+  // freeze for seconds while React re-renders thousands of nodes per chunk.
+  // 2000 is enough for normal debugging without crippling the renderer.
+  const MAX_SERIAL_LINES = 2000;
+  const capLines = (lines: SerialLine[]): SerialLine[] =>
+    lines.length > MAX_SERIAL_LINES ? lines.slice(-MAX_SERIAL_LINES) : lines;
   // null = not uploading; -1 = indeterminate; 0-100 = STK500 flash progress
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isLinkConnected, setIsLinkConnected] = useState(false);
@@ -86,7 +93,7 @@ export const useHardware = () => {
     if (serialBufferRef.current.length > 0) {
       const text = serialBufferRef.current.replace(/\r$/, "");
       serialBufferRef.current = "";
-      setSerialLines((prev) => [
+      setSerialLines((prev) => capLines([
         ...prev,
         {
           id: Math.random().toString(36).substr(2, 9),
@@ -94,7 +101,7 @@ export const useHardware = () => {
           direction: "rx" as const,
           timestamp: new Date(),
         },
-      ]);
+      ]));
     }
     if (flushTimerRef.current) {
       clearTimeout(flushTimerRef.current);
@@ -114,7 +121,7 @@ export const useHardware = () => {
           clearTimeout(flushTimerRef.current);
           flushTimerRef.current = null;
         }
-        setSerialLines((prev) => [
+        setSerialLines((prev) => capLines([
           ...prev,
           ...parts.map((line) => ({
             id: Math.random().toString(36).substr(2, 9),
@@ -122,7 +129,7 @@ export const useHardware = () => {
             direction: "rx" as const,
             timestamp: new Date(),
           })),
-        ]);
+        ]));
       }
 
       if (serialBufferRef.current.length > 0 && !flushTimerRef.current) {
@@ -475,7 +482,7 @@ export const useHardware = () => {
         });
       }
 
-      setSerialLines((prev) => [
+      setSerialLines((prev) => capLines([
         ...prev,
         {
           id: Math.random().toString(36).substr(2, 9),
@@ -483,7 +490,7 @@ export const useHardware = () => {
           direction: "tx" as const,
           timestamp: new Date(),
         },
-      ]);
+      ]));
     },
     [serialMode, addLog],
   );

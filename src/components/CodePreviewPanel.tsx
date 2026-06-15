@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Code2, X, Copy, Check } from "lucide-react";
 
 interface CodePreviewPanelProps {
@@ -114,7 +114,14 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
     ? "void setup() {\n  // Add blocks to generate code inside each.\n}\n\nvoid loop() {\n  \n}"
     : code;
 
-  const lines = displayCode.split("\n");
+  // Pre-highlight every line once per code change, not on every parent
+  // re-render. Without this, App-level state updates (serial monitor adding
+  // a line, etc.) re-run highlightCode for every line on every keystroke.
+  const highlightedLines = useMemo(
+    () => displayCode.split("\n").map((line) => highlightCode(line)),
+    [displayCode],
+  );
+  const lines = highlightedLines;
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#1e1e1e] transition-all duration-300">
@@ -154,16 +161,14 @@ export const CodePreviewPanel: React.FC<CodePreviewPanelProps> = ({
         className="flex-1 overflow-auto custom-scrollbar bg-transparent"
       >
         <pre className="p-5 text-[13px] font-mono leading-relaxed">
-          {lines.map((line, i) => (
+          {lines.map((html, i) => (
             <div key={i} className="flex">
               <span className="text-gray-600 select-none w-8 text-right pr-4 flex-shrink-0 text-xs leading-relaxed">
                 {i + 1}
               </span>
               <span
                 className="text-gray-800 dark:text-gray-300 flex-1"
-                dangerouslySetInnerHTML={{
-                  __html: highlightCode(line),
-                }}
+                dangerouslySetInnerHTML={{ __html: html }}
               />
             </div>
           ))}
