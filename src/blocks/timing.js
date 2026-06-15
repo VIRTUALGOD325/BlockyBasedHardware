@@ -26,6 +26,25 @@ blockly.common.defineBlocksWithJsonArray([
         "tooltip": "Repeat the enclosed blocks N times"
     },
 
+    // ── arduino_for_count: count with VAR from N to M by step S, repeat ──
+    // Inspired by mBlock's "count with i from 0 to 4 by step 1 repeat" block.
+    {
+        "type": "arduino_for_count",
+        "message0": "count with %1 from %2 to %3 by step %4 repeat %5",
+        "args0": [
+            { "type": "field_variable", "name": "VAR", "variable": "i" },
+            { "type": "input_value", "name": "FROM", "check": "Number" },
+            { "type": "input_value", "name": "TO", "check": "Number" },
+            { "type": "input_value", "name": "STEP", "check": "Number" },
+            { "type": "input_statement", "name": "DO" }
+        ],
+        "inputsInline": true,
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": "#FFAB19",
+        "tooltip": "Repeat using a counter variable (inclusive end, negative step counts down)"
+    },
+
     // ── arduino_while_until: repeat while/until, no "do" label ─────────
     {
         "type": "arduino_while_until",

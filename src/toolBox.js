@@ -29,6 +29,15 @@ export default {
                 },
                 {
                     kind: "block",
+                    type: "arduino_for_count",
+                    inputs: {
+                        FROM: { shadow: { type: "math_number", fields: { NUM: 0 } } },
+                        TO:   { shadow: { type: "math_number", fields: { NUM: 4 } } },
+                        STEP: { shadow: { type: "math_number", fields: { NUM: 1 } } }
+                    }
+                },
+                {
+                    kind: "block",
                     type: "arduino_while_until",
                     inputs: {
                         BOOL: {

@@ -173,6 +173,22 @@ arduinoGen.forBlock['arduino_repeat'] = function (block) {
     return 'for (int i = 0; i < ' + times + '; i++) {\n' + branch + '}\n';
 };
 
+// arduino_for_count — count with VAR from N to M by step S, repeat
+// Uses inclusive end ("from 0 to 4" iterates 0,1,2,3,4) to match Scratch/mBlock.
+// Negative step counts down. Variable is declared globally so it can be read
+// elsewhere in the program.
+arduinoGen.forBlock['arduino_for_count'] = function (block) {
+    const id = block.getFieldValue('VAR');
+    const varName = arduinoGen.getVariableName(id, block.workspace);
+    const from = arduinoGen.valueToCode(block, 'FROM', Order.ASSIGNMENT) || '0';
+    const to   = arduinoGen.valueToCode(block, 'TO',   Order.ASSIGNMENT) || '0';
+    const step = arduinoGen.valueToCode(block, 'STEP', Order.ASSIGNMENT) || '1';
+    const branch = arduinoGen.statementToCode(block, 'DO');
+    arduinoGen.variables_['var_' + varName] = 'int ' + varName + ';';
+    const cond = '((' + step + ') >= 0 ? ' + varName + ' <= (' + to + ') : ' + varName + ' >= (' + to + '))';
+    return 'for (' + varName + ' = ' + from + '; ' + cond + '; ' + varName + ' += ' + step + ') {\n' + branch + '}\n';
+};
+
 // controls_whileUntil — legacy, kept for old saved files
 arduinoGen.forBlock['controls_whileUntil'] = function (block) {
     const until = block.getFieldValue('MODE') === 'UNTIL';
