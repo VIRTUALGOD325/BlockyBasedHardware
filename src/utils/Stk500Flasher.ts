@@ -40,11 +40,13 @@ export class Stk500Flasher {
    * The port must NOT be open — this method opens and closes it.
    */
   async flash(binary: Uint8Array, onProgress?: OnProgress): Promise<void> {
-    // Try optiboot (115200) first, then old bootloader (57600)
-    const baudRates = [115200, 57600];
+    // Try old bootloader (57600, Nano/CH340 clones) first, then optiboot (115200, genuine Uno).
+    // Most boards in the wild are clones — trying 57600 first cuts the common-case time in half.
+    const baudRates = [57600, 115200];
     let synced = false;
 
-    for (const baud of baudRates) {
+    for (let i = 0; i < baudRates.length; i++) {
+      const baud = baudRates[i];
       await this.port.open({ baudRate: baud });
 
       try {
@@ -52,26 +54,29 @@ export class Stk500Flasher {
         this.writer = this.port.writable?.getWriter() ?? null;
         if (!this.writer) throw new Error("Port not writable");
 
-        // Reset the board by toggling DTR (enter bootloader)
+        // Reset the board by toggling DTR+RTS (enter bootloader)
         await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
         await this.delay(250);
         await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
-        // Wait for bootloader to start — optiboot needs ~100ms, old bootloader longer
-        await this.delay(baud === 115200 ? 150 : 500);
+        // Wait for bootloader to start. CH340 clones are slower to assert DTR than
+        // genuine ATmega16U2 boards, and the old Nano bootloader takes ~1s to start
+        // listening. Be generous — too short here is the #1 cause of sync failures.
+        await this.delay(baud === 115200 ? 400 : 1000);
 
         // Drain any garbage from reset
         this.readBuffer = [];
 
         onProgress?.("sync", 0);
 
-        // Sync with bootloader (try multiple times)
-        for (let attempt = 0; attempt < 10; attempt++) {
+        // Sync with bootloader. Try ~20 times over ~2s — bootloader sometimes needs
+        // a few attempts to lock on, especially on CH340.
+        for (let attempt = 0; attempt < 20; attempt++) {
           try {
             await this.getSync();
             synced = true;
             break;
           } catch {
-            await this.delay(50);
+            await this.delay(100);
             this.readBuffer = [];
           }
         }
@@ -83,6 +88,10 @@ export class Stk500Flasher {
           await this.stopReading();
           if (this.port.readable || this.port.writable) {
             await this.port.close();
+          }
+          // CH340 on Windows needs a beat to fully release the handle before reopen.
+          if (i < baudRates.length - 1) {
+            await this.delay(500);
           }
         }
       }

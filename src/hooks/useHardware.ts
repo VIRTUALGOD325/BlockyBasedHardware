@@ -508,7 +508,10 @@ export const useHardware = () => {
   const reconnectAfterUpload = useCallback(
     async (port: string, isErrorRecovery = false) => {
       const maxRetries = 4;
-      const baseDelay = isErrorRecovery ? 1000 : 2000;
+      // CH340 clones on Windows need ~1.5–2s for the OS to release the handle after
+      // the flasher closes it. Using too short a delay here causes a spurious
+      // "Failed to open serial port" on the first retry.
+      const baseDelay = isErrorRecovery ? 2000 : 2000;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         addLog(
