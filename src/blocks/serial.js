@@ -74,6 +74,41 @@ Blockly.common.defineBlocksWithJsonArray([
         "tooltip": "Reads a single byte from the serial port (returns -1 if none available)"
     },
 
+    // ASCII code of a character — returns the numeric ASCII value (e.g. '1' -> 49).
+    // Lets kids compare a byte read from the serial port against a readable
+    // character literal instead of memorising ASCII tables.
+    {
+        "type": "serial_ascii_code",
+        "message0": "ASCII code of %1",
+        "args0": [
+            {
+                "type": "field_input",
+                "name": "CHAR",
+                "text": "1"
+            }
+        ],
+        "output": "Number",
+        "colour": "#00979D",
+        "tooltip": "Returns the ASCII code of a single character (e.g. '1' = 49, 'A' = 65). Use this with the read-byte block to check what character was received over serial/Bluetooth."
+    },
+
+    // Digit value of an ASCII byte — converts '0'..'9' to 0..9.
+    // Common when receiving a single digit over HC-05 Bluetooth or USB serial.
+    {
+        "type": "serial_digit_value",
+        "message0": "digit value of %1",
+        "args0": [
+            {
+                "type": "input_value",
+                "name": "VALUE",
+                "check": "Number"
+            }
+        ],
+        "output": "Number",
+        "colour": "#00979D",
+        "tooltip": "Converts an ASCII digit byte to its numeric value (e.g. 49 → 1). Useful when reading a single digit '0'-'9' from the serial port."
+    },
+
     // Serial.readStringUntil(terminator)
     {
         "type": "serial_read_string",

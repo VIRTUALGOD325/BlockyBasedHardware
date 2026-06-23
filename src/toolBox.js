@@ -222,6 +222,16 @@ export default {
                 { kind: "block", type: "serial_available" },
                 { kind: "block", type: "serial_read" },
                 { kind: "block", type: "serial_read_string" },
+                { kind: "block", type: "serial_ascii_code" },
+                {
+                    kind: "block",
+                    type: "serial_digit_value",
+                    inputs: {
+                        VALUE: {
+                            shadow: { type: "math_number", fields: { NUM: 48 } }
+                        }
+                    }
+                },
             ]
         },
 
