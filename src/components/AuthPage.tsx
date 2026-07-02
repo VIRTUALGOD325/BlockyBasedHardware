@@ -9,6 +9,7 @@ import {
   X,
   User,
   ArrowLeft,
+  Home,
 } from "lucide-react";
 
 type AuthView = "login" | "register";
@@ -108,9 +109,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         {/* Content */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <span className="text-white font-bold text-lg">E</span>
-            </div>
             <span className="text-white font-bold text-2xl tracking-wide">
               KYNA
             </span>
@@ -157,8 +155,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       {/* Right Panel - Auth Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
-        {/* Back button — hidden when login is mandatory */}
-        {!mandatory && (
+        {/* Top-left action: Home link when login is mandatory, else Back to editor */}
+        {mandatory ? (
+          <a
+            href="/"
+            className="absolute top-6 left-6 flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
+          >
+            <Home className="w-4 h-4" />
+            Home
+          </a>
+        ) : (
           <button
             onClick={onClose}
             className="absolute top-6 left-6 flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
