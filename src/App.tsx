@@ -18,6 +18,7 @@ import { arduinoGen } from "../generators/arduino";
 import {
   Undo2,
   Redo2,
+  Loader2,
 } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 
@@ -124,6 +125,36 @@ const App: React.FC = () => {
     }
     uploadCode(code);
   }, [uploadCode, addLog]);
+
+  // ── Compulsory login gate ──
+  // While the session is being restored, show a loading screen.
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0f1117] gap-3">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+        <p className="text-white/40 text-sm">Loading KYNA Hardware…</p>
+      </div>
+    );
+  }
+
+  // Login is required — block access to the editor until authenticated.
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen bg-[#0f1117]">
+        <PlatformBanner />
+        <AuthPage
+          isOpen={true}
+          mandatory
+          onClose={() => {}}
+          onLogin={login}
+          onRegister={register}
+          error={authError}
+          onClearError={clearError}
+          isLoading={authLoading}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-[#0f1117]">

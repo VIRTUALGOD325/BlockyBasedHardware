@@ -21,6 +21,8 @@ interface AuthPageProps {
   error: string | null;
   onClearError: () => void;
   isLoading?: boolean;
+  /** When true, the user cannot dismiss the page — login/registration is required to continue. */
+  mandatory?: boolean;
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({
@@ -31,6 +33,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   error,
   onClearError,
   isLoading = false,
+  mandatory = false,
 }) => {
   const [view, setView] = useState<AuthView>("login");
   const [name, setName] = useState("");
@@ -154,14 +157,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       {/* Right Panel - Auth Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
-        {/* Back button */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 left-6 flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to editor
-        </button>
+        {/* Back button — hidden when login is mandatory */}
+        {!mandatory && (
+          <button
+            onClick={onClose}
+            className="absolute top-6 left-6 flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to editor
+          </button>
+        )}
 
         <div className="w-full max-w-md">
           {/* Tab Toggle */}
